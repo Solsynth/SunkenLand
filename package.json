@@ -3,11 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "description": "Embeddable SunkenLand web components (sk-*) with a zod-validated Stargate API client.",
   "scripts": {
-    "dev": "vite",
-    "build": "run-p type-check \"build-only {@}\" --",
-    "preview": "vite preview",
-    "build-only": "vite build",
+    "dev": "storybook dev -p 6006",
+    "test": "vitest",
+    "build": "run-s type-check build:lib build:types",
+    "build:lib": "vite build --config vite.lib.config.ts && mkdir -p dist/presets && cp presets/replies-list.css dist/presets/",
+    "build:types": "vue-tsc -p tsconfig.lib.json",
+    "build-storybook": "storybook build",
     "type-check": "vue-tsc --build",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
@@ -15,9 +18,8 @@
     "format": "oxfmt src/"
   },
   "dependencies": {
-    "pinia": "^4.0.3",
     "vue": "^3.5.43",
-    "zod": "^4.6.5"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.5",
@@ -35,9 +37,34 @@
     "oxlint": "~1.82.0",
     "typescript": "npm:typescript-native-bridge@latest",
     "vite": "^8.3.0",
-    "vite-plugin-vue-devtools": "^8.2.1",
     "vue-eslint-parser": "^10.4.1",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.11",
+    "storybook": "^10.6.0",
+    "@storybook/web-components-vite": "^10.6.0",
+    "@chromatic-com/storybook": "latest",
+    "@storybook/addon-vitest": "^10.6.0",
+    "@storybook/addon-a11y": "^10.6.0",
+    "@storybook/addon-docs": "^10.6.0",
+    "lit": "latest",
+    "vitest": "latest",
+    "playwright": "latest",
+    "@vitest/browser-playwright": "latest",
+    "@vitest/coverage-v8": "latest"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/sunk-enland.js",
+  "module": "./dist/sunk-enland.js",
+  "types": "./dist/types/elements/index.d.ts",
+  "unpkg": "./dist/sunk-enland.iife.js",
+  "jsdelivr": "./dist/sunk-enland.iife.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/elements/index.d.ts",
+      "import": "./dist/sunk-enland.js"
+    },
+    "./presets/replies-list.css": "./dist/presets/replies-list.css"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"

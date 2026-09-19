@@ -40,7 +40,7 @@ export interface ApiClientConfig {
 export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   /** Serialized to a URL query string (null/undefined/empty skipped). */
-  query?: Record<string, QueryValue>;
+  query?: Record<string, QueryValue> | URLSearchParams;
   /**
    * Plain object (validated + snake_cased + JSON), FormData, URLSearchParams,
    * or a pre-serialized string. Pass `body: undefined` for GET/DELETE.
@@ -186,6 +186,17 @@ export class ApiClient {
    * response fails to parse.
    */
   async request<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+    return (await this.requestWithHeaders<T>(path, options)).data;
+  }
+
+  /**
+   * Like `request`, but also returns the response `Headers` (e.g. to read
+   * `x-total` on paginated list endpoints).
+   */
+  async requestWithHeaders<T>(
+    path: string,
+    options: ApiRequestOptions = {},
+  ): Promise<{ data: T; headers: Headers }> {
     const {
       method = "GET",
       query,
@@ -247,7 +258,10 @@ export class ApiClient {
     const text = await response.text();
     const data = parseResponse(text);
     const camel = snakeToCamel(data);
-    return schema ? (schema.parse(camel) as T) : (camel as T);
+    return {
+      data: schema ? (schema.parse(camel) as T) : (camel as T),
+      headers: response.headers,
+    };
   }
 }
 

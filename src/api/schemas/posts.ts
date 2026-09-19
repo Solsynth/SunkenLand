@@ -1,0 +1,132 @@
+import { z } from "zod";
+import { snId, snTimestamp } from "./common";
+
+/**
+ * Post / reply schemas for the Sphere data API.
+ *
+ * Ported from FloatLand's `app/types/post.ts` and consumed as camelCase (the
+ * client snake→camelizes wire payloads before validation). Only the shapes the
+ * reply list needs are modeled: posts with publishers, attachments, tags, and
+ * recursive replied/forwarded post references.
+ */
+
+/** Attachment file metadata. */
+export const snFileAttachmentSchema = z.object({
+  id: snId,
+  name: z.string(),
+  url: z.string().optional(),
+  mimeType: z.string(),
+  hasCompression: z.boolean(),
+  hasThumbnail: z.boolean(),
+  fileMeta: z.record(z.string(), z.unknown()),
+});
+
+/** Author account embedded in a publisher. */
+export const snPostAccountSchema = z.object({
+  id: snId,
+  name: z.string(),
+  nick: z.string().nullable(),
+  profile: z
+    .object({
+      id: snId,
+      firstName: z.string().nullable(),
+      lastName: z.string().nullable(),
+      bio: z.string().nullable(),
+      picture: snFileAttachmentSchema.nullable(),
+      background: snFileAttachmentSchema.nullable(),
+    })
+    .nullable(),
+});
+
+/** Post publisher (author). */
+export const snPublisherSchema = z.object({
+  id: snId,
+  name: z.string(),
+  nick: z.string().nullable(),
+  bio: z.string().nullable(),
+  picture: snFileAttachmentSchema.nullable(),
+  background: snFileAttachmentSchema.nullable(),
+  verification: z
+    .object({
+      type: z.number(),
+      title: z.string().nullable(),
+      description: z.string().nullable(),
+      verifiedBy: z.string().nullable(),
+    })
+    .nullable(),
+  account: snPostAccountSchema.nullable(),
+  stat: z
+    .object({
+      totalPosts: z.number(),
+      totalSubscribers: z.number(),
+      totalViews: z.number(),
+    })
+    .nullable()
+    .optional(),
+  createdAt: snTimestamp,
+});
+
+/** Post tag. */
+export const snTagSchema = z.object({
+  id: snId,
+  slug: z.string(),
+  name: z.string(),
+});
+
+const snPostBaseSchema = z.object({
+  id: snId,
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  content: z.string(),
+  contentType: z.number(),
+  publishedAt: snTimestamp,
+  visibility: z.number(),
+  boostCount: z.number(),
+  upvotes: z.number(),
+  downvotes: z.number(),
+  repliesCount: z.number(),
+  reactionsCount: z.record(z.string(), z.number()),
+  reactionsMade: z.record(z.string(), z.boolean()).nullable(),
+  viewsUnique: z.number(),
+  viewsTotal: z.number(),
+  isTruncated: z.boolean(),
+  publisher: snPublisherSchema,
+  attachments: z.array(snFileAttachmentSchema),
+  tags: z.array(snTagSchema),
+  // Both spellings have appeared on the wire; keep the union optional.
+  meta: z.record(z.string(), z.unknown()).nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
+  resourceIdentifier: z.string(),
+  createdAt: snTimestamp,
+  editedAt: snTimestamp.nullable(),
+  updatedAt: snTimestamp,
+  type: z.number().optional(),
+});
+
+export interface SnPost extends z.infer<typeof snPostBaseSchema> {
+  /** Reply that this post replies to (recursive). */
+  repliedPost: SnPost | null;
+  /** Post that this post forwards (recursive). */
+  forwardedPost: SnPost | null;
+}
+
+/**
+ * A post or reply. `repliedPost` / `forwardedPost` are self-referential, so
+ * the schema is recursive via `z.lazy`.
+ */
+export const snPostSchema: z.ZodType<SnPost> = snPostBaseSchema.extend({
+  repliedPost: z.lazy(() => snPostSchema.nullable()),
+  forwardedPost: z.lazy(() => snPostSchema.nullable()),
+});
+
+export type ThreadedReplyNode = z.infer<typeof snThreadedReplyNodeSchema>;
+
+/**
+ * One node of the threaded replies tree: the reply post plus its indentation
+ * depth and parent post id. Wire shape is `{ post, depth, parent_id }`.
+ */
+export const snThreadedReplyNodeSchema = z.object({
+  post: snPostSchema,
+  depth: z.number().default(0),
+  parentId: z.string().nullable().default(null),
+});

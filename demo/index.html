@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>sk-replies-list — demo</title>
+    <script>
+      // Stub the API with realistic snake_case wire payloads BEFORE the bundle
+      // loads. The element talks to `https://api.solian.app` via global fetch.
+      const REPLIES = [
+        {
+          post: {
+            id: "r1",
+            title: null,
+            description: null,
+            content:
+              "Good question! See the **migration guide** at [docs](https://docs.solian.app).\n\nShort answer: it works on any host.",
+            content_type: 0,
+            published_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+            visibility: 1,
+            boost_count: 2,
+            upvotes: 4,
+            downvotes: 0,
+            replies_count: 2,
+            reactions_count: {},
+            reactions_made: null,
+            views_unique: 12,
+            views_total: 20,
+            is_truncated: false,
+            publisher: {
+              id: "p_alice",
+              name: "alice",
+              nick: "Alice",
+              bio: null,
+              picture: null,
+              background: null,
+              verification: null,
+              account: {
+                id: "acc_alice",
+                name: "alice",
+                nick: "Alice",
+                profile: null,
+              },
+              stat: { total_posts: 42, total_subscribers: 9, total_views: 1200 },
+              created_at: "2023-01-01T00:00:00Z",
+            },
+            attachments: [],
+            tags: [],
+            replied_post: null,
+            forwarded_post: null,
+            meta: null,
+            resource_identifier: "post.r1",
+            created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+            edited_at: null,
+            updated_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+          },
+          depth: 0,
+          parent_id: null,
+        },
+        {
+          post: {
+            id: "r2",
+            title: null,
+            description: null,
+            content:
+              "Follow-up: does it support **pagination**?\n\n```js\nconst page = await fetchPostRepliesThreaded(id, { take: 6 });\n```",
+            content_type: 0,
+            published_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+            visibility: 1,
+            boost_count: 0,
+            upvotes: 1,
+            downvotes: 0,
+            replies_count: 1,
+            reactions_count: { "thumb": 3 },
+            reactions_made: null,
+            views_unique: 8,
+            views_total: 9,
+            is_truncated: false,
+            publisher: {
+              id: "p_bob",
+              name: "bob",
+              nick: "Bob",
+              bio: null,
+              picture: { id: "f_bob", name: "bob.svg", url: BOB_AVATAR, mime_type: "image/svg+xml", has_compression: false, has_thumbnail: true, file_meta: {} },
+              background: null,
+              verification: null,
+              account: { id: "acc_bob", name: "bob", nick: "Bob", profile: null },
+              stat: null,
+              created_at: "2023-02-01T00:00:00Z",
+            },
+            attachments: [],
+            tags: [],
+            replied_post: null,
+            forwarded_post: null,
+            meta: null,
+            resource_identifier: "post.r2",
+            created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+            edited_at: null,
+            updated_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+          },
+          depth: 1,
+          parent_id: "r1",
+        },
+        {
+          post: {
+            id: "r3",
+            title: null,
+            description: null,
+            content: "Seconded — ship it.",
+            content_type: 0,
+            published_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            visibility: 1,
+            boost_count: 0,
+            upvotes: 0,
+            downvotes: 0,
+            replies_count: 0,
+            reactions_count: {},
+            reactions_made: null,
+            views_unique: 2,
+            views_total: 2,
+            is_truncated: false,
+            publisher: {
+              id: "p_carol",
+              name: "carol",
+              nick: "Carol",
+              bio: null,
+              picture: null,
+              background: null,
+              verification: null,
+              account: { id: "acc_carol", name: "carol", nick: "Carol", profile: null },
+              stat: null,
+              created_at: "2023-03-01T00:00:00Z",
+            },
+            attachments: [],
+            tags: [],
+            replied_post: null,
+            forwarded_post: null,
+            meta: null,
+            resource_identifier: "post.r3",
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            edited_at: null,
+            updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+          depth: 1,
+          parent_id: "r1",
+        },
+        {
+          post: {
+            id: "r4",
+            title: null,
+            description: null,
+            content: "Yes — `take`/`offset` are supported, plus realm/media filters.",
+            content_type: 0,
+            published_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            visibility: 1,
+            boost_count: 1,
+            upvotes: 0,
+            downvotes: 0,
+            replies_count: 0,
+            reactions_count: {},
+            reactions_made: null,
+            views_unique: 1,
+            views_total: 1,
+            is_truncated: false,
+            publisher: {
+              id: "p_bob",
+              name: "bob",
+              nick: "Bob",
+              bio: null,
+              picture: { id: "f_bob", name: "bob.svg", url: BOB_AVATAR, mime_type: "image/svg+xml", has_compression: false, has_thumbnail: true, file_meta: {} },
+              background: null,
+              verification: null,
+              account: { id: "acc_bob", name: "bob", nick: "Bob", profile: null },
+              stat: null,
+              created_at: "2023-02-01T00:00:00Z",
+            },
+            attachments: [{ id: "a1", name: "screenshot.png", url: "https://img.example/a1.png", mime_type: "image/png", has_compression: false, has_thumbnail: true, file_meta: {} }],
+            tags: [],
+            replied_post: null,
+            forwarded_post: null,
+            meta: null,
+            resource_identifier: "post.r4",
+            created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            edited_at: null,
+            updated_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+          },
+          depth: 2,
+          parent_id: "r2",
+        },
+        {
+          post: {
+            id: "r5",
+            title: null,
+            description: null,
+            content: "## Summary\n\nWe'll land this behind a feature flag next week.",
+            content_type: 0,
+            published_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+            visibility: 1,
+            boost_count: 0,
+            upvotes: 7,
+            downvotes: 0,
+            replies_count: 0,
+            reactions_count: { "rocket": 5 },
+            reactions_made: null,
+            views_unique: 30,
+            views_total: 40,
+            is_truncated: false,
+            publisher: {
+              id: "p_editor",
+              name: "editor",
+              nick: "Editor",
+              bio: null,
+              picture: null,
+              background: null,
+              verification: { type: 1, title: "Editor", description: null, verified_by: null },
+              account: { id: "acc_editor", name: "editor", nick: "Editor", profile: null },
+              stat: null,
+              created_at: "2022-01-01T00:00:00Z",
+            },
+            attachments: [],
+            tags: [],
+            replied_post: null,
+            forwarded_post: null,
+            meta: null,
+            resource_identifier: "post.r5",
+            created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+            edited_at: null,
+            updated_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+          depth: 0,
+          parent_id: null,
+        },
+      ];
+
+      window.__lastRequests = [];
+      // Inline SVG avatar so fixture images load without network access.
+      const BOB_AVATAR =
+        "data:image/svg+xml," +
+        encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
+            '<circle cx="32" cy="32" r="32" fill="#8b6cf0"/>' +
+            '<text x="32" y="42" font-family="sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle">B</text>' +
+            "</svg>",
+        );
+      const reqLogEl = () => document.getElementById("reqlog");
+      window.fetch = async (input, init) => {
+        const url = typeof input === "string" ? input : input.url;
+        const req = new URL(url, window.location.href);
+        const take = Number(req.searchParams.get("take") || 6);
+        const offset = Number(req.searchParams.get("offset") || 0);
+        const page = REPLIES.slice(offset, offset + take);
+        window.__lastRequests.push({ url: req.pathname + req.search, method: (init && init.method) || "GET" });
+        const logEl = reqLogEl();
+        if (logEl) logEl.textContent += "\n" + req.pathname + req.search;
+        const body = JSON.stringify(page);
+        return new Response(body, {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "x-total": String(REPLIES.length),
+          },
+        });
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Nunito", system-ui, sans-serif;
+        max-width: 560px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        background: #fafafa;
+        color: #222;
+      }
+      h1 { font-size: 1.1rem; }
+      .demo-block { margin-bottom: 2rem; }
+      .demo-block h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
+      #log { font-family: ui-monospace, monospace; font-size: 0.75rem; background: #111; color: #7fdbff; padding: 0.5rem; border-radius: 0.5rem; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <h1>sk-replies-list — demo</h1>
+    <p>
+      Fetch is stubbed with mock wire payloads. The preset stylesheet is
+      injected via <code>SunkenLand.configure({ stylesheets: … })</code>
+      (bundle-loaded script below), exactly as a CDN host would. See the
+      browser console / log box for <code>reply-click</code> events.
+    </p>
+
+    <div class="demo-block">
+      <h2>Configured preset (no css attribute)</h2>
+      <sk-replies-list
+        id="list"
+        post="post_1"
+        take="2"
+        query-term="migration"
+        order-desc
+        view-all-url="https://solian.app/posts/post_1"
+      ></sk-replies-list>
+    </div>
+
+    <div class="demo-block">
+      <h2>Per-element css attribute override</h2>
+      <sk-replies-list
+        id="override"
+        post="post_1"
+        take="2"
+        css="../dist/presets/replies-list.css"
+      ></sk-replies-list>
+    </div>
+
+    <div class="demo-block">
+      <h2>Missing post attribute (error state)</h2>
+      <sk-replies-list id="missing"></sk-replies-list>
+    </div>
+
+    <div class="demo-block">
+      <h2>Unstyled (css="" disables the preset)</h2>
+      <sk-replies-list id="plain" post="post_1" take="2" css=""></sk-replies-list>
+    </div>
+
+    <div class="demo-block">
+      <h2>Request log</h2>
+      <pre id="reqlog">(fetches appear here)</pre>
+    </div>
+
+    <div class="demo-block">
+      <h2>Event log</h2>
+      <pre id="log">(waiting for events)</pre>
+    </div>
+
+    <div class="demo-block">
+      <h2>Diagnostics (populated by the page)</h2>
+      <pre id="diag">(waiting)</pre>
+    </div>
+
+    <script>
+      // Capture bundle-load errors. Must run BEFORE the bundle script so a
+      // throw during its execution is caught.
+      window.__errors = [];
+      window.addEventListener("error", (e) => {
+        window.__errors.push("error: " + (e.message || e.error) + " @ " + (e.filename || "") + ":" + (e.lineno || ""));
+      });
+      window.addEventListener("unhandledrejection", (e) => {
+        window.__errors.push("rejection: " + ((e.reason && e.reason.stack) || String(e.reason)));
+      });
+    </script>
+
+    <script src="../dist/sunk-enland.iife.js"></script>
+    <script>
+      // Configure the library: preset stylesheets injected into every
+      // element's shadow root, plus the API origin if it ever differs.
+      SunkenLand.configure({
+        stylesheets: "../dist/presets/replies-list.css",
+      });
+
+      const log = (msg) => {
+        const el = document.getElementById("log");
+        el.textContent = el.textContent + "\n" + msg;
+      };
+      const list = document.getElementById("list");
+      list.addEventListener("reply-click", (e) => {
+        log("reply-click detail.postId = " + e.detail.postId + " (composed=" + e.composed + ")");
+      });
+
+      // Report page-visible state so the element can be verified without
+      // console access: upgrade status, requests, shadow DOM contents.
+      const diag = document.getElementById("diag");
+      const dump = () => {
+        const el = document.getElementById("list");
+        const missing = document.getElementById("missing");
+        const plain = document.getElementById("plain");
+        const lines = [];
+        lines.push("upgraded=" + Boolean(el && el.shadowRoot));
+        lines.push("defined=" + (window.customElements && window.customElements.get("sk-replies-list") ? "yes" : "no"));
+        lines.push("bundleErrors=" + JSON.stringify(window.__errors));
+        lines.push("requests=" + JSON.stringify(window.__lastRequests));
+        const sr = el && el.shadowRoot;
+        if (sr) {
+          lines.push("items=" + sr.querySelectorAll("ul.sk-replies__list > li.sk-reply").length);
+          lines.push("header=" + (sr.querySelector(".sk-replies__header") || {}).textContent);
+          lines.push("loadMore=" + (sr.querySelector(".sk-load-more") || {}).textContent);
+          lines.push("viewAll=" + (sr.querySelector(".sk-view-all") || {}).getAttribute("href"));
+          lines.push("cssLink=" + (sr.querySelector("link[rel=stylesheet]") || {}).getAttribute ? (sr.querySelector("link[rel=stylesheet]").getAttribute("href")) : null);
+          const first = sr.querySelector(".sk-reply");
+          if (first) {
+            lines.push("firstDepth=" + first.style.getPropertyValue("--sk-depth"));
+            lines.push("firstAuthor=" + (first.querySelector(".sk-reply__author") || {}).textContent);
+            lines.push("firstContentHtml=" + (first.querySelector(".sk-reply__content") || {}).innerHTML);
+            const avatar = first.querySelector(".sk-reply__avatar");
+            const img = avatar && avatar.querySelector("img");
+            lines.push("firstAvatar=" + (img ? "img:" + img.getAttribute("src") : "initials:" + avatar.textContent));
+            lines.push("firstTime=" + (first.querySelector(".sk-reply__time") || {}).textContent);
+            lines.push("firstStats=" + (first.querySelector(".sk-reply__stats") || {}).textContent);
+          }
+          lines.push("ariaBusy=" + (sr.querySelector("section") || {}).getAttribute("aria-busy"));
+        }
+        const ms = missing && missing.shadowRoot;
+        if (ms) {
+          lines.push("missingError=" + (ms.querySelector(".sk-state--error") || {}).textContent);
+        }
+        const ps = plain && plain.shadowRoot;
+        if (ps) {
+          lines.push("plainItems=" + ps.querySelectorAll("ul.sk-replies__list > li.sk-reply").length);
+          lines.push("plainCssLink=" + Boolean(ps.querySelector("link[rel=stylesheet]")));
+          lines.push("plainHeader=" + (ps.querySelector(".sk-replies__header") || {}).textContent);
+        }
+        diag.textContent = lines.join("\n");
+      };
+      setTimeout(dump, 700);
+      window.__dumpDiag = dump;
+    </script>
+  </body>
+</html>

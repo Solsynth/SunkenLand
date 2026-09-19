@@ -45,3 +45,6 @@ export {
   defaultAccountBoard,
   parseAccountBoardItems,
 } from "./account";
+
+export { PostsApi, postsApi } from "./posts";
+export type { ReplyListFilters, FetchThreadedRepliesOptions } from "./posts";

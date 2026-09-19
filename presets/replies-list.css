@@ -1,0 +1,264 @@
+/**
+ * SunkenLand preset stylesheet for `sk-replies-list`.
+ *
+ * Replicates FloatLand's reply-list look and feel (oklch tokens, Nunito stack,
+ * 0.625rem radii, depth-based indentation, light/dark via
+ * `prefers-color-scheme`) without coupling the element to any host framework.
+ *
+ * Load it with the element's `css` attribute:
+ *
+ *   <sk-replies-list post="…" css="https://cdn…/presets/replies-list.css"></sk-replies-list>
+ *
+ * The stylesheet is injected into the element's shadow root as a <link>, so
+ * it only applies to this element. Override the `--sk-*` custom properties on
+ * `sk-replies-list` from your own CSS to theme it.
+ */
+
+:host {
+  --sk-font: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sk-base-100: oklch(100% 0 0);
+  --sk-base-200: oklch(98% 0 0);
+  --sk-base-300: oklch(95% 0 0);
+  --sk-base-content: oklch(21% 0.006 285.885);
+  --sk-primary: oklch(62% 0.0873 281deg);
+  --sk-primary-content: oklch(93% 0.034 272.788);
+  --sk-radius: 0.625rem;
+  --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+
+  display: block;
+  box-sizing: border-box;
+  font-family: var(--sk-font);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--sk-base-content);
+  background: var(--sk-base-100);
+  border: 1px solid var(--sk-border);
+  border-radius: var(--sk-radius);
+  overflow: hidden;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host {
+    --sk-base-100: oklch(0% 0 0);
+    --sk-base-200: oklch(20% 0.016 285.938);
+    --sk-base-300: oklch(25% 0.013 285.805);
+    --sk-base-content: oklch(97.807% 0.029 256.847);
+    --sk-primary: oklch(50% 0.0873 281deg);
+    --sk-primary-content: oklch(96% 0.018 272.314);
+    --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+    color-scheme: dark;
+  }
+}
+
+.sk-replies__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: color-mix(in oklch, var(--sk-base-content) 70%, transparent);
+  border-bottom: 1px solid var(--sk-border);
+}
+
+.sk-replies__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.sk-reply {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  padding-left: calc(0.75rem + (var(--sk-depth, 0) * 18px));
+  border-radius: var(--sk-radius);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.sk-reply:hover {
+  background: color-mix(in oklch, var(--sk-base-100) 70%, var(--sk-base-200));
+}
+
+.sk-reply__avatar {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.sk-reply__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sk-reply__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sk-primary);
+  color: var(--sk-primary-content);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sk-reply__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.sk-reply__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  margin-bottom: 0.125rem;
+  flex-wrap: wrap;
+}
+
+.sk-reply__author {
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-reply__handle {
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-reply__time {
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--sk-base-content) 40%, transparent);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.sk-reply__content {
+  font-size: 0.75rem;
+  overflow-wrap: break-word;
+  /* prose-xs: trim vertical rhythm around the markdown blocks. */
+}
+
+.sk-reply__content > :first-child {
+  margin-top: 0;
+}
+
+.sk-reply__content > :last-child {
+  margin-bottom: 0;
+}
+
+.sk-reply__content p {
+  margin: 0.25rem 0;
+}
+
+.sk-reply__content a {
+  color: var(--sk-primary);
+  text-decoration: none;
+}
+
+.sk-reply__content a:hover {
+  text-decoration: underline;
+}
+
+.sk-reply__content code {
+  padding: 0.1em 0.3em;
+  border-radius: 0.3125rem;
+  background: var(--sk-base-200);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.6875rem;
+}
+
+.sk-reply__content pre {
+  margin: 0.25rem 0;
+  padding: 0.5rem;
+  border-radius: var(--sk-radius);
+  background: var(--sk-base-200);
+  overflow-x: auto;
+}
+
+.sk-reply__content pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.sk-reply__content blockquote {
+  margin: 0.25rem 0;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--sk-base-300);
+  color: color-mix(in oklch, var(--sk-base-content) 70%, transparent);
+}
+
+.sk-reply__content ul,
+.sk-reply__content ol {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.sk-reply__content h1,
+.sk-reply__content h2,
+.sk-reply__content h3,
+.sk-reply__content h4,
+.sk-reply__content h5,
+.sk-reply__content h6 {
+  margin: 0.375rem 0 0.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.sk-reply__attachments,
+.sk-reply__stats {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+}
+
+.sk-state {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+}
+
+.sk-state--error {
+  color: var(--sk-primary);
+}
+
+.sk-load-more,
+.sk-view-all {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--sk-primary);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.sk-load-more:hover,
+.sk-view-all:hover {
+  background: color-mix(in oklch, var(--sk-base-200) 50%, transparent);
+}
