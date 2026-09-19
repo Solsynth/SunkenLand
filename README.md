@@ -509,7 +509,29 @@ files themselves (`dist/sunken-land.iife.js`, `dist/presets/*.css`,
 `dist/stickers/*.webp`). Committing `dist/` would instead allow
 `https://cdn.jsdelivr.net/gh/Solsynth/SunkenLand@vX.Y.Z/dist/…`.
 
-### Consuming it before it is published
+### Token-free installs
+
+GitHub Packages authenticates *every* install, so a consumer that would rather
+not carry a token has two options:
+
+1. **Vendored tarball** — `npm pack` here, commit the tarball into the consumer
+   and depend on it by path. It carries `dist/`, so nothing builds on install
+   and a Docker build needs no registry credentials:
+
+   ```json
+   "@solsynth/sunken-land": "file:vendor/solsynth-sunken-land-0.1.0.tgz"
+   ```
+
+   The image must copy it *before* installing:
+   `COPY package.json ./`, `COPY vendor ./vendor/`, then `RUN npm install`.
+
+2. **Git dependency** — `"@solsynth/sunken-land": "github:Solsynth/SunkenLand#v0.1.0"`.
+   No registry, no token (the repository is public), and it clones in seconds —
+   but `dist/` is not committed, so an install gets *sources only* and the
+   package is not importable until it is built: commit `dist/` or add a
+   `prepare` script.
+
+### Consuming a checkout
 
 ```sh
 # in this repo
