@@ -7,8 +7,8 @@ import { defineConfig } from "vite";
  * Library build for the embeddable `sk-*` custom elements.
  *
  * Produces:
- * - `dist/sunk-enland.js`       — ESM bundle (npm `import`)
- * - `dist/sunk-enland.iife.js`  — IIFE bundle (CDN `<script>`)
+ * - `dist/sunken-land.js`       — ESM bundle (npm `import`)
+ * - `dist/sunken-land.iife.js`  — IIFE bundle (CDN `<script>`)
  *
  * Vue is bundled in: embedded components must work on hosts that know nothing
  * about Vue. The preset stylesheet is copied into `dist/presets/` by the
@@ -36,7 +36,7 @@ export default defineConfig({
       name: "SunkenLand",
       formats: ["es", "iife"],
       fileName: (format) =>
-        format === "es" ? "sunk-enland.js" : "sunk-enland.iife.js",
+        format === "es" ? "sunken-land.js" : "sunken-land.iife.js",
     },
     rollupOptions: {
       output: {

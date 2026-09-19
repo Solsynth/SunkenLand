@@ -17,7 +17,7 @@ import type { OidcDefaults, SunkenLandSession } from "./session";
  *   });
  *
  *   // npm (ESM)
- *   import { configure } from "sunk-enland";
+ *   import { configure } from "@solsynth/sunken-land";
  *   configure({ css: ["/presets/base.css", "/presets/replies-list.css"] });
  *
  * `baseUrl`/`fetchImpl`/auth hooks/`session` are read when an element is

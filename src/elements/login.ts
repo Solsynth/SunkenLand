@@ -13,6 +13,9 @@ import LoginButton from "./LoginButton.vue";
 export const LoginElement = defineCustomElement(LoginButton);
 
 export function defineLogin(tag = "sk-login") {
+  // The registry only exists in the browser: importing this module on the
+  // server (Nuxt/Nitro SSR, vitest node) must not throw.
+  if (typeof customElements === "undefined") return undefined;
   if (!customElements.get(tag)) {
     customElements.define(tag, defineCustomElement(LoginButton));
   }

@@ -1,0 +1,64 @@
+name: Publish
+
+# Tag-driven release: `npm version minor && git push --follow-tags`.
+# Bump the version in package.json first — the tag must match it.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # registry-url points npm at GitHub Packages, and the token in
+      # NODE_AUTH_TOKEN is the repo's own GITHUB_TOKEN.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: "@solsynth"
+
+      - name: Check the tag matches package.json
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+
+      - run: bun install --frozen-lockfile
+
+      # The vitest browser suite drives real Chromium.
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run type-check
+      - run: bun run test
+
+      # `prepack` builds dist/ (bundles, presets, stickers, types) — the
+      # tarball is exactly what `files` allows.
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Prove the freshly published package installs the way a consumer has to
+      # (GitHub Packages requires a token for every install, public included).
+      - name: Verify the published package installs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          scratch=$(mktemp -d)
+          cd "$scratch"
+          npm init -y > /dev/null
+          {
+            echo "@solsynth:registry=https://npm.pkg.github.com"
+            echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}"
+          } > .npmrc
+          npm install "@solsynth/sunken-land@$version"
+          node -e "import('@solsynth/sunken-land').then((m) => console.log('installed:', typeof m.configure, typeof m.SunkenLandSession))"

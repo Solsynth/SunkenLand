@@ -17,6 +17,9 @@ import ReactionList from "./ReactionList.vue";
 export const ReactionListElement = defineCustomElement(ReactionList);
 
 export function defineReactionList(tag = "sk-reaction-list") {
+  // The registry only exists in the browser: importing this module on the
+  // server (Nuxt/Nitro SSR, vitest node) must not throw.
+  if (typeof customElements === "undefined") return undefined;
   if (!customElements.get(tag)) {
     customElements.define(tag, defineCustomElement(ReactionList));
   }

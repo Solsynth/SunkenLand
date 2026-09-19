@@ -1,9 +1,33 @@
 {
-  "name": "@solar-network/sunken-land",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
+  "name": "@solsynth/sunken-land",
+  "version": "0.1.0",
   "description": "Embeddable SunkenLand web components (sk-*) with a zod-validated Stargate API client.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Solar Network",
+  "keywords": [
+    "solar-network",
+    "web-components",
+    "custom-elements",
+    "stargate",
+    "solarpass",
+    "oauth",
+    "oauth2",
+    "pkce",
+    "sunkenland"
+  ],
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Solsynth/SunkenLand.git"
+  },
+  "homepage": "https://github.com/Solsynth/SunkenLand#readme",
+  "bugs": {
+    "url": "https://github.com/Solsynth/SunkenLand/issues"
+  },
   "scripts": {
     "dev": "storybook dev -p 6006",
     "test": "vitest",
@@ -15,7 +39,8 @@
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "oxfmt src/"
+    "format": "oxfmt src/",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "vue": "^3.5.43",
@@ -52,24 +77,27 @@
     "@vitest/coverage-v8": "latest"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
-  "main": "./dist/sunk-enland.js",
-  "module": "./dist/sunk-enland.js",
+  "main": "./dist/sunken-land.js",
+  "module": "./dist/sunken-land.js",
   "types": "./dist/types/elements/index.d.ts",
-  "unpkg": "./dist/sunk-enland.iife.js",
-  "jsdelivr": "./dist/sunk-enland.iife.js",
+  "unpkg": "./dist/sunken-land.iife.js",
+  "jsdelivr": "./dist/sunken-land.iife.js",
   "exports": {
     ".": {
       "types": "./dist/types/elements/index.d.ts",
-      "import": "./dist/sunk-enland.js"
+      "import": "./dist/sunken-land.js",
+      "default": "./dist/sunken-land.js"
     },
-    "./presets/replies-list.css": "./dist/presets/replies-list.css",
-    "./presets/login.css": "./dist/presets/login.css",
-    "./presets/reply-composer.css": "./dist/presets/reply-composer.css"
+    "./presets/*": "./dist/presets/*",
+    "./stickers/*": "./dist/stickers/*",
+    "./package.json": "./package.json"
   },
-  "engines": {
-    "node": "^22.18.0 || >=24.12.0"
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   },
   "overrides": {
     "typescript": "$typescript"

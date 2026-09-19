@@ -3,7 +3,7 @@
  *
  * Importing this module registers every `sk-*` element (idempotent — existing
  * tags are left alone). The IIFE bundle used from a CDN is this entry point,
- * so `<script src="…/sunk-enland.iife.js">` makes all elements available.
+ * so `<script src="…/sunken-land.iife.js">` makes all elements available.
  */
 
 import { defineRepliesList } from "./replies-list";

@@ -17,6 +17,9 @@ import RepliesList from "./RepliesList.vue";
 export const RepliesListElement = defineCustomElement(RepliesList);
 
 export function defineRepliesList(tag = "sk-replies-list") {
+  // The registry only exists in the browser: importing this module on the
+  // server (Nuxt/Nitro SSR, vitest node) must not throw.
+  if (typeof customElements === "undefined") return undefined;
   if (!customElements.get(tag)) {
     customElements.define(tag, defineCustomElement(RepliesList));
   }

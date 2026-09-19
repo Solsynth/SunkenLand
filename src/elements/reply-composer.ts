@@ -13,6 +13,9 @@ import ReplyComposer from "./ReplyComposer.vue";
 export const ReplyComposerElement = defineCustomElement(ReplyComposer);
 
 export function defineReplyComposer(tag = "sk-reply-composer") {
+  // The registry only exists in the browser: importing this module on the
+  // server (Nuxt/Nitro SSR, vitest node) must not throw.
+  if (typeof customElements === "undefined") return undefined;
   if (!customElements.get(tag)) {
     customElements.define(tag, defineCustomElement(ReplyComposer));
   }
