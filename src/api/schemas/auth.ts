@@ -133,6 +133,8 @@ export const snAuthTokenSchema = z.object({
   refreshExpiresIn: z.number().optional(),
   expiresAt: z.string().optional(),
   refreshExpiresAt: z.string().optional(),
+  /** OIDC id_token (present when the endpoint issues one). */
+  idToken: z.string().optional(),
 });
 export type SnAuthToken = z.infer<typeof snAuthTokenSchema>;
 

@@ -15,6 +15,15 @@ function toSnakeCase(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
+/**
+ * Convert a single identifier to snake_case (`"thumbUp"` → `"thumb_up"`).
+ * Response/request conversion only touches object keys; values that happen to
+ * be identifiers (reaction symbols) need this explicitly.
+ */
+export function camelToSnakeStr(str: string): string {
+  return toSnakeCase(str);
+}
+
 export function snakeToCamel<T>(obj: unknown): T {
   if (obj === null || obj === undefined) {
     return obj as T;

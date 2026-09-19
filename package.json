@@ -8,7 +8,7 @@
     "dev": "storybook dev -p 6006",
     "test": "vitest",
     "build": "run-s type-check build:lib build:types",
-    "build:lib": "vite build --config vite.lib.config.ts && mkdir -p dist/presets && cp presets/replies-list.css dist/presets/",
+    "build:lib": "vite build --config vite.lib.config.ts && mkdir -p dist/presets dist/stickers && cp presets/*.css dist/presets/ && cp stickers/*.webp dist/stickers/",
     "build:types": "vue-tsc -p tsconfig.lib.json",
     "build-storybook": "storybook build",
     "type-check": "vue-tsc --build",
@@ -64,7 +64,9 @@
       "types": "./dist/types/elements/index.d.ts",
       "import": "./dist/sunk-enland.js"
     },
-    "./presets/replies-list.css": "./dist/presets/replies-list.css"
+    "./presets/replies-list.css": "./dist/presets/replies-list.css",
+    "./presets/login.css": "./dist/presets/login.css",
+    "./presets/reply-composer.css": "./dist/presets/reply-composer.css"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"

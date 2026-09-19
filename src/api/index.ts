@@ -13,6 +13,7 @@ export * from "./schemas";
 export {
   snakeToCamel,
   camelToSnake,
+  camelToSnakeStr,
 } from "./case";
 
 export {

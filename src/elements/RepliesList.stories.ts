@@ -9,7 +9,7 @@ import { configure } from "../config";
  *
  * Stories render the actual custom element, exactly as an embedding host would
  * use it: attributes map to args. The preset stylesheet comes from the shared
- * config — `.storybook/preview.ts` calls `configure({ stylesheets:
+ * config — `.storybook/preview.ts` calls `configure({ css:
  * "/presets/replies-list.css" })`, the same call a CDN host makes via
  * `SunkenLand.configure(...)` — and is injected into the shadow root.
  *
@@ -71,7 +71,7 @@ const meta: Meta<RepliesListArgs> = {
     viewAllUrl: { control: "text", description: "Link to the full conversation." },
     css: {
       control: "text",
-      description: "Per-element stylesheet override (overrides configured `stylesheets`; `css=\"\"` disables styling).",
+      description: "Per-element stylesheet override (overrides configured `css`; `css=\"\"` disables styling).",
     },
   },
   args: {
@@ -150,7 +150,7 @@ export const LoadMore: Story = {
 
 /**
  * Configured stylesheets inject into the shadow root and re-sync live:
- * `configure({ stylesheets })` adds `<link>`s to already-mounted elements,
+ * `configure({ css })` adds `<link>`s to already-mounted elements,
  * and clearing them removes the links. The `css` attribute overrides.
  */
 export const ConfiguredStylesheet: Story = {
@@ -161,11 +161,11 @@ export const ConfiguredStylesheet: Story = {
     const countLinks = () => sr.querySelectorAll("link[rel=stylesheet]").length;
 
     await step("clearing configured stylesheets removes injected links", async () => {
-      configure({ stylesheets: [] });
+      configure({ css: [] });
       await waitFor(() => expect(countLinks()).toBe(0));
     });
     await step("configure with a stylesheet injects a link into the shadow root", async () => {
-      configure({ stylesheets: "/presets/replies-list.css" });
+      configure({ css: "/presets/replies-list.css" });
       await waitFor(() => expect(countLinks()).toBe(1));
       await expect(sr.querySelector("link[rel=stylesheet]")?.getAttribute("href")).toBe("/presets/replies-list.css");
     });
@@ -178,7 +178,7 @@ export const ConfiguredStylesheet: Story = {
     });
 
     // Restore the preview default so later stories see the preset again.
-    configure({ stylesheets: "/presets/replies-list.css" });
+    configure({ css: "/presets/replies-list.css" });
   },
 };
 

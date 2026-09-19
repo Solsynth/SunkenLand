@@ -1,0 +1,388 @@
+/**
+ * SunkenLand preset stylesheet for `sk-reply-composer`.
+ *
+ * Replicates the FloatLand look (oklch tokens, Nunito stack, 0.625rem radii,
+ * light/dark via `prefers-color-scheme`): the signed-in composer form and the
+ * Google-style branded "Sign in with Solarpass" button shown to guests.
+ *
+ * Load it with the element's `css` attribute:
+ *
+ *   <sk-reply-composer post="…" css="https://cdn…/presets/reply-composer.css"></sk-reply-composer>
+ *
+ * or once for every element via `configure({ stylesheets })`. The stylesheet
+ * is injected into the element's shadow root as a <link>, so it only applies
+ * to this element.
+ *
+ * Themable without writing CSS selectors — override these on the host element
+ * (or any ancestor), or from inline styles:
+ *
+ *   Surfaces:   --sk-font, --sk-base-100, --sk-base-200, --sk-base-300,
+ *               --sk-base-content, --sk-primary, --sk-primary-content,
+ *               --sk-radius, --sk-border
+ *   Brand button:
+ *               --sk-btn-radius, --sk-btn-border-width, --sk-btn-border-color,
+ *               --sk-btn-padding, --sk-btn-gap, --sk-btn-bg, --sk-btn-color,
+ *               --sk-btn-hover-bg, --sk-btn-hover-border-color,
+ *               --sk-btn-font-size, --sk-btn-font-weight, --sk-btn-shadow,
+ *               --sk-btn-logo-size, --sk-btn-logo-color
+ *   Composer:   --sk-input-radius, --sk-input-padding, --sk-input-bg,
+ *               --sk-input-color, --sk-submit-radius, --sk-submit-bg,
+ *               --sk-submit-color, --sk-submit-padding
+ *
+ *   sk-reply-composer { --sk-submit-bg: rebeccapurple; --sk-input-radius: 0.5rem; }
+ *
+ * Every internal node also carries a `part` for direct styling from the host:
+ * `guest`, `hint`, `button`, `logo`, `label`, `form`, `meta`, `as`, `input`,
+ * `bar`, `count`, `submit`, `error`.
+ *
+ * `:host` rules are scoped to the element's marker class (`:host(.sk-composer)`,
+ * which the component sets on the host), so configuring several presets at once
+ * — the documented setup — cannot leak this element's surface (borders,
+ * background, `overflow`) onto the others.
+ */
+
+:host(.sk-composer) {
+  --sk-font: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sk-base-100: oklch(100% 0 0);
+  --sk-base-200: oklch(98% 0 0);
+  --sk-base-300: oklch(95% 0 0);
+  --sk-base-content: oklch(21% 0.006 285.885);
+  --sk-primary: oklch(62% 0.0873 281deg);
+  --sk-primary-content: oklch(93% 0.034 272.788);
+  --sk-radius: 0.625rem;
+  --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+
+  /* Brand button */
+  --sk-btn-radius: 9999px;
+  --sk-btn-border-width: 1px;
+  --sk-btn-border-color: color-mix(in oklch, var(--sk-base-300) 90%, transparent);
+  --sk-btn-padding: 0.5625rem 1.125rem;
+  --sk-btn-gap: 0.625rem;
+  --sk-btn-bg: var(--sk-base-100);
+  --sk-btn-color: var(--sk-base-content);
+  --sk-btn-hover-bg: var(--sk-base-200);
+  --sk-btn-hover-border-color: color-mix(in oklch, var(--sk-base-content) 30%, transparent);
+  --sk-btn-font-size: 0.875rem;
+  --sk-btn-font-weight: 600;
+  --sk-btn-shadow: 0 1px 2px color-mix(in oklch, var(--sk-base-content) 8%, transparent);
+  --sk-btn-logo-size: 1.125rem;
+  --sk-btn-logo-color: color-mix(in oklch, var(--sk-base-content) 80%, transparent);
+
+  /* Composer form */
+  --sk-input-radius: var(--sk-radius);
+  --sk-input-padding: 0.5rem 0.625rem;
+  --sk-input-bg: var(--sk-base-100);
+  --sk-input-color: var(--sk-base-content);
+  --sk-submit-radius: 9999px;
+  --sk-submit-padding: 0.375rem 1rem;
+  --sk-submit-bg: var(--sk-primary);
+  --sk-submit-color: var(--sk-primary-content);
+
+  display: block;
+  box-sizing: border-box;
+  font-family: var(--sk-font);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--sk-base-content);
+  background: var(--sk-base-100);
+  border: 1px solid var(--sk-border);
+  border-radius: var(--sk-radius);
+  /* No `overflow: hidden`: the card's own children are inset with their own
+     radii, and clipping here would cut off the publisher dropdown. */
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host(.sk-composer) {
+    --sk-base-100: oklch(0% 0 0);
+    --sk-base-200: oklch(20% 0.016 285.938);
+    --sk-base-300: oklch(25% 0.013 285.805);
+    --sk-base-content: oklch(97.807% 0.029 256.847);
+    --sk-primary: oklch(50% 0.0873 281deg);
+    --sk-primary-content: oklch(96% 0.018 272.314);
+    --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+    color-scheme: dark;
+  }
+}
+
+/* ── Guest state: hint + branded sign-in button ─────────────────────────── */
+
+.sk-composer__guest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.sk-composer__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--sk-base-content) 60%, transparent);
+}
+
+/* Google-style branded button. */
+.sk-composer__solarpass {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-btn-gap);
+  padding: var(--sk-btn-padding);
+  font-family: var(--sk-font);
+  font-size: var(--sk-btn-font-size);
+  font-weight: var(--sk-btn-font-weight);
+  line-height: 1.25rem;
+  color: var(--sk-btn-color);
+  background: var(--sk-btn-bg);
+  border: var(--sk-btn-border-width) solid var(--sk-btn-border-color);
+  border-radius: var(--sk-btn-radius);
+  box-shadow: var(--sk-btn-shadow);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.sk-composer__solarpass:hover {
+  background: var(--sk-btn-hover-bg);
+  border-color: var(--sk-btn-hover-border-color);
+}
+
+.sk-composer__solarpass:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sk-composer__logo {
+  display: inline-flex;
+  color: var(--sk-btn-logo-color);
+}
+
+.sk-composer__logo svg,
+.sk-composer__logo--image img {
+  width: var(--sk-btn-logo-size);
+  height: var(--sk-btn-logo-size);
+  display: block;
+}
+
+.sk-composer__label {
+  white-space: nowrap;
+}
+
+/* ── Signed-in composer form ────────────────────────────────────────────── */
+
+.sk-composer__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.sk-composer__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.25rem;
+}
+
+.sk-composer__as {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: color-mix(in oklch, var(--sk-base-content) 70%, transparent);
+}
+
+.sk-composer__as--pending {
+  font-weight: 400;
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+}
+
+/* ── Publisher switcher ─────────────────────────────────────────────────── */
+
+.sk-composer__publisher {
+  position: relative;
+}
+
+.sk-composer__publisher-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.125rem;
+  font-family: var(--sk-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: color-mix(in oklch, var(--sk-base-content) 75%, transparent);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  cursor: pointer;
+}
+
+.sk-composer__publisher-toggle:hover:not(:disabled) {
+  background: var(--sk-base-200);
+  border-color: var(--sk-border);
+}
+
+.sk-composer__publisher-toggle:disabled {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.sk-composer__publisher-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  overflow: hidden;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--sk-avatar-color, var(--sk-primary-content));
+  background: var(--sk-avatar-bg, var(--sk-base-300));
+  border-radius: 9999px;
+}
+
+.sk-composer__publisher-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sk-composer__publisher-name {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-composer__publisher-handle {
+  font-weight: 400;
+  color: color-mix(in oklch, var(--sk-base-content) 45%, transparent);
+}
+
+.sk-composer__publisher-list {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 20;
+  min-width: 14rem;
+  max-height: 15rem;
+  margin: 0;
+  padding: 0.25rem;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--sk-base-100);
+  border: 1px solid var(--sk-border);
+  border-radius: var(--sk-radius);
+  box-shadow: 0 6px 20px color-mix(in oklch, var(--sk-base-content) 14%, transparent);
+}
+
+.sk-composer__publisher-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  font-family: var(--sk-font);
+  font-size: 0.8125rem;
+  text-align: left;
+  color: var(--sk-base-content);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--sk-radius) - 0.125rem);
+  cursor: pointer;
+}
+
+.sk-composer__publisher-option:hover {
+  background: var(--sk-base-200);
+}
+
+.sk-composer__publisher-option--active {
+  background: color-mix(in oklch, var(--sk-primary) 12%, transparent);
+}
+
+.sk-composer__publisher-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.sk-composer__publisher-empty {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+}
+
+.sk-composer__input {
+  width: 100%;
+  padding: var(--sk-input-padding);
+  font-family: var(--sk-font);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--sk-input-color);
+  background: var(--sk-input-bg);
+  border: 1px solid var(--sk-border);
+  border-radius: var(--sk-input-radius);
+  resize: vertical;
+}
+
+.sk-composer__input::placeholder {
+  color: color-mix(in oklch, var(--sk-base-content) 45%, transparent);
+}
+
+.sk-composer__input:focus {
+  outline: 2px solid color-mix(in oklch, var(--sk-primary) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.sk-composer__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sk-composer__count {
+  font-size: 0.6875rem;
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+}
+
+.sk-composer__count--full {
+  color: var(--sk-primary);
+}
+
+.sk-composer__submit {
+  padding: var(--sk-submit-padding);
+  font-family: var(--sk-font);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sk-submit-color);
+  background: var(--sk-submit-bg);
+  border: none;
+  border-radius: var(--sk-submit-radius);
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.sk-composer__submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.sk-composer__submit:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sk-composer__error {
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--sk-primary);
+}

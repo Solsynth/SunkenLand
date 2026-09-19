@@ -4,15 +4,23 @@
  * initials avatar, relative timestamps).
  */
 
-export interface PublisherLike {
+/** What `getDisplayName` needs — deliberately looser than `PublisherLike`
+ * so accounts and publishers both satisfy it without weak-type rejections. */
+export interface DisplayNameLike {
   name?: string | null;
-  nick?: string | null;
+  /** `undefined` when absent (e.g. optional schema fields) vs explicit null. */
+  nick?: string | null | undefined;
+}
+
+export interface PublisherLike extends DisplayNameLike {
   picture?: { url?: string | null } | null;
   profile?: { picture?: { url?: string | null } | null } | null;
 }
 
 /** Prefer nick over the account/publisher name, like FloatLand. */
-export function getDisplayName(publisher: PublisherLike | null | undefined): string {
+export function getDisplayName(
+  publisher: DisplayNameLike | null | undefined,
+): string {
   return publisher?.nick || publisher?.name || "Unknown";
 }
 

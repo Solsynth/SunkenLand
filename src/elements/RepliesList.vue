@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   ApiClient,
   API_BASE_URL,
@@ -9,6 +9,8 @@ import {
   type ReplyListFilters,
 } from "../api";
 import { getConfig, onConfigChange, toStylesheetList } from "../config";
+import { onWindowEvent, REPLY_POSTED_EVENT } from "../events";
+import { getSession } from "../session";
 import { renderMarkdown } from "../utils/markdown";
 import {
   formatRelativeTime,
@@ -16,13 +18,14 @@ import {
   getDisplayName,
   getInitials,
 } from "../utils/format";
+import { getHostElement, markHost } from "../utils/host";
 
 /**
  * Threaded reply list for a parent post.
  *
  * Deliberately UNSTYLED: this component renders semantic markup only. Opt into
  * the FloatLand-flavored look by configuring the preset stylesheet once —
- * `configure({ stylesheets: "https://cdn…/presets/replies-list.css" })` — or
+ * `configure({ css: "https://cdn…/presets/replies-list.css" })` — or
  * per element via the `css` attribute (`css=""` disables it). Configured
  * stylesheets are injected into the element's shadow root as `<link>`s and
  * re-sync live when `configure` is called again.
@@ -35,9 +38,15 @@ import {
  * - `header`: show the "N replies" header (default true)
  * - `view-all-url`: optional link to the full conversation
  * - `css`: per-element stylesheet URL override (overrides configured
- *   `stylesheets`; `css=""` disables styling for this element)
+ *   configured `css`; `css=""` disables styling for this element)
  * - `base-url`: per-element API origin override (defaults to `configure`d
  *   `baseUrl`, then `https://api.solian.app`)
+ *
+ * Reads are public and run unauthenticated. When a session is configured (the
+ * package's `session` singleton by default, or `configure({ session })`), the
+ * list attaches the session's access token to requests and re-fetches
+ * automatically when a reply to `post` is posted elsewhere on the page
+ * (`sunkenland:reply-posted`, dispatched by `sk-reply-composer`).
  *
  * Events (dispatched on the host element; they bubble and are composed so they
  * cross the shadow boundary):
@@ -53,6 +62,14 @@ import {
  * - `load-more` — replaces the load-more button label
  * - `view-all` — replaces the view-all link label
  * Each slot has a sensible fallback, so slots are strictly opt-in.
+ *
+ * Styling: the preset (see `presets/replies-list.css`) is driven by `--sk-*`
+ * custom properties, and every internal node carries a `part` for direct
+ * external styling: `header`, `count`, `list`, `reply`, `avatar`, `body`,
+ * `meta`, `author`, `handle`, `time`, `content`, `attachments`, `stats`,
+ * `state`, `error`, `empty`, `load-more`, `view-all`.
+ *
+ *   sk-replies-list::part(reply) { border-left: 2px solid currentColor; }
  */
 
 const props = withDefaults(
@@ -77,12 +94,13 @@ const props = withDefaults(
 const rootEl = ref<HTMLElement | null>(null);
 
 const cfg = getConfig();
+const session = getSession();
 const client = new ApiClient({
   baseUrl: props.baseUrl || cfg.baseUrl || API_BASE_URL,
   fetchImpl: cfg.fetchImpl,
-  getAccessToken: cfg.getAccessToken,
-  refreshAccessToken: cfg.refreshAccessToken,
-  onUnauthorized: cfg.onUnauthorized,
+  getAccessToken: cfg.getAccessToken ?? session.getAccessToken,
+  refreshAccessToken: cfg.refreshAccessToken ?? session.refreshAccessToken,
+  onUnauthorized: cfg.onUnauthorized ?? session.onUnauthorized,
 });
 const posts = new PostsApi(client);
 
@@ -93,12 +111,24 @@ const stopConfigSync = onConfigChange(() => {
 });
 onUnmounted(stopConfigSync);
 
+onMounted(() => {
+  markHost(rootEl.value, "sk-replies");
+});
+
+// Re-fetch when a reply is posted to this post (e.g. by an `sk-reply-composer`
+// on the same page), so the list stays current without host wiring.
+const stopReplyEvents = onWindowEvent(REPLY_POSTED_EVENT, (event) => {
+  const detail = event.detail as { postId?: string } | undefined;
+  if (detail?.postId === props.post) void load(true);
+});
+onUnmounted(stopReplyEvents);
+
 const stylesheets = computed<string[]>(() => {
   // Re-evaluate whenever the config changes (the `css` attribute is already
   // reactive on its own).
   void configVersion.value;
   if (props.css !== undefined) return props.css ? [props.css] : [];
-  return toStylesheetList(getConfig().stylesheets);
+  return toStylesheetList(getConfig().css);
 });
 
 const nodes = ref<ThreadedReplyNode[]>([]);
@@ -162,9 +192,7 @@ function onReplyClick(post: SnPost): void {
 watch(
   error,
   (message) => {
-    const host = (rootEl.value?.getRootNode() as ShadowRoot | undefined)?.host as
-      | HTMLElement
-      | undefined;
+    const host = getHostElement(rootEl.value);
     if (!host) return;
     if (message) host.setAttribute("data-error", message);
     else host.removeAttribute("data-error");
@@ -202,24 +230,25 @@ watch(
       rel="stylesheet"
       :href="href"
     />
-    <header v-if="header && total > 0" class="sk-replies__header">
+    <header v-if="header && total > 0" class="sk-replies__header" part="header">
       <slot name="header">
-        <span class="sk-replies__count">
+        <span class="sk-replies__count" part="count">
           {{ total }} {{ total === 1 ? "reply" : "replies" }}
         </span>
       </slot>
     </header>
 
-    <ul v-if="nodes.length > 0" class="sk-replies__list">
+    <ul v-if="nodes.length > 0" class="sk-replies__list" part="list">
       <li
         v-for="node in nodes"
         :key="node.post.id"
         class="sk-reply"
+        part="reply"
         :style="{ '--sk-depth': node.depth }"
         :aria-level="node.depth + 1"
         @click="onReplyClick(node.post)"
       >
-        <span v-if="getAvatarUrl(node.post.publisher)" class="sk-reply__avatar">
+        <span v-if="getAvatarUrl(node.post.publisher)" class="sk-reply__avatar" part="avatar">
           <img
             :src="getAvatarUrl(node.post.publisher)"
             :alt="getDisplayName(node.post.publisher)"
@@ -229,20 +258,21 @@ watch(
         <span
           v-else
           class="sk-reply__avatar sk-reply__avatar--placeholder"
+          part="avatar"
           aria-hidden="true"
         >
           {{ getInitials(getDisplayName(node.post.publisher)) }}
         </span>
 
-        <div class="sk-reply__body">
-          <div class="sk-reply__meta">
-            <span class="sk-reply__author">
+        <div class="sk-reply__body" part="body">
+          <div class="sk-reply__meta" part="meta">
+            <span class="sk-reply__author" part="author">
               {{ getDisplayName(node.post.publisher) }}
             </span>
-            <span v-if="node.post.publisher?.name" class="sk-reply__handle">
+            <span v-if="node.post.publisher?.name" class="sk-reply__handle" part="handle">
               @{{ node.post.publisher.name }}
             </span>
-            <time class="sk-reply__time" :datetime="node.post.publishedAt">
+            <time class="sk-reply__time" part="time" :datetime="node.post.publishedAt">
               {{ formatRelativeTime(node.post.publishedAt) }}
             </time>
           </div>
@@ -251,18 +281,20 @@ watch(
           <div
             v-if="node.post.content"
             class="sk-reply__content"
+            part="content"
             v-html="renderMarkdown(node.post.content)"
           />
 
           <div
             v-if="node.post.attachments.length > 0"
             class="sk-reply__attachments"
+            part="attachments"
           >
             {{ node.post.attachments.length }}
             {{ node.post.attachments.length === 1 ? "attachment" : "attachments" }}
           </div>
 
-          <div v-if="node.post.repliesCount > 0 || node.post.boostCount > 0" class="sk-reply__stats">
+          <div v-if="node.post.repliesCount > 0 || node.post.boostCount > 0" class="sk-reply__stats" part="stats">
             <span v-if="node.post.repliesCount > 0">
               {{ node.post.repliesCount }}
               {{ node.post.repliesCount === 1 ? "reply" : "replies" }}
@@ -276,30 +308,32 @@ watch(
       </li>
     </ul>
 
-    <div v-if="loading" class="sk-state" role="status">
+    <div v-if="loading" class="sk-state" part="state" role="status">
       <slot name="loading">Loading replies...</slot>
     </div>
     <div
       v-else-if="error && nodes.length === 0"
       class="sk-state sk-state--error"
+      part="error"
       role="alert"
     >
       <slot name="error">{{ error }}</slot>
     </div>
-    <div v-else-if="!loading && total === 0" class="sk-state">
+    <div v-else-if="!loading && total === 0" class="sk-state" part="empty">
       <slot name="empty">No replies yet.</slot>
     </div>
 
     <button
       v-if="hasMore && !loading"
       class="sk-load-more"
+      part="load-more"
       type="button"
       @click="load(false)"
     >
       <slot name="load-more">Load more replies...</slot>
     </button>
 
-    <a v-if="viewAllUrl && total > 3" class="sk-view-all" :href="viewAllUrl">
+    <a v-if="viewAllUrl && total > 3" class="sk-view-all" part="view-all" :href="viewAllUrl">
       <slot name="view-all">View all {{ total }} replies</slot>
     </a>
   </section>

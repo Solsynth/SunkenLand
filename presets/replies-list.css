@@ -12,9 +12,14 @@
  * The stylesheet is injected into the element's shadow root as a <link>, so
  * it only applies to this element. Override the `--sk-*` custom properties on
  * `sk-replies-list` from your own CSS to theme it.
+ *
+ * `:host` rules are scoped to the element's marker class (`:host(.sk-replies)`,
+ * which the component sets on the host), so configuring several presets at once
+ * — the documented setup — cannot leak this element's surface (borders,
+ * background, `overflow`) onto the others.
  */
 
-:host {
+:host(.sk-replies) {
   --sk-font: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --sk-base-100: oklch(100% 0 0);
   --sk-base-200: oklch(98% 0 0);
@@ -45,7 +50,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :host {
+  :host(.sk-replies) {
     --sk-base-100: oklch(0% 0 0);
     --sk-base-200: oklch(20% 0.016 285.938);
     --sk-base-300: oklch(25% 0.013 285.805);

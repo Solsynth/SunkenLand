@@ -65,6 +65,7 @@ export const snPublisherSchema = z.object({
     .optional(),
   createdAt: snTimestamp,
 });
+export type SnPublisher = z.infer<typeof snPublisherSchema>;
 
 /** Post tag. */
 export const snTagSchema = z.object({
@@ -130,3 +131,57 @@ export const snThreadedReplyNodeSchema = z.object({
   depth: z.number().default(0),
   parentId: z.string().nullable().default(null),
 });
+
+/**
+ * Payload for `POST /sphere/posts?pub=<publisher>` (creating a post or
+ * reply). camelCase — the client serializes to snake_case on the wire
+ * (`repliedPostId` → `replied_post_id`, etc.). Ported from FloatLand's
+ * ComposeDialog payload.
+ */
+export const createPostPayloadSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  content: z.string().min(1),
+  visibility: z.number().int().default(0),
+  language: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
+  attachments: z.array(z.string()).optional(),
+  type: z.number().int().optional(),
+  slug: z.string().optional(),
+  realmId: z.string().optional(),
+  /** Parent post id — present on replies. */
+  repliedPostId: z.string().optional(),
+  forwardedPostId: z.string().optional(),
+});
+export type CreatePostPayload = z.infer<typeof createPostPayloadSchema>;
+
+/** Reaction summary on a post (`GET /sphere/posts/{id}/reactions`). */
+export const snReactionSchema = z.object({
+  symbol: z.string(),
+  attitude: z.number(),
+  count: z.number(),
+});
+export type SnReaction = z.infer<typeof snReactionSchema>;
+
+/** One account's reaction on a post (list endpoint items). */
+export const snPostReactionSchema = z.object({
+  id: snId,
+  postId: z.string(),
+  symbol: z.string(),
+  attitude: z.number(),
+  accountId: z.string().optional(),
+  actorId: z.string().optional(),
+  account: z
+    .object({
+      id: snId,
+      name: z.string(),
+      nick: z.string().nullable().optional(),
+      profile: z
+        .object({ picture: z.object({ id: z.string() }).optional() })
+        .optional(),
+    })
+    .optional(),
+  createdAt: snTimestamp,
+});
+export type SnPostReaction = z.infer<typeof snPostReactionSchema>;

@@ -6,6 +6,10 @@
     // Extra safety for array and object lookups, but may have false positives.
     "noUncheckedIndexedAccess": true,
 
+    // `Promise.withResolvers` (used by the OIDC popup flow) needs ES2024.
+    "target": "ES2024",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+
     // Path mapping for cleaner imports.
     "paths": {
       "@/*": ["./src/*"]

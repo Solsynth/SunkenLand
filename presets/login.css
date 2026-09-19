@@ -1,0 +1,208 @@
+/**
+ * SunkenLand preset stylesheet for `sk-login`.
+ *
+ * Replicates the FloatLand look (oklch tokens, Nunito stack, 0.625rem radii,
+ * light/dark via `prefers-color-scheme`) and a Google-style branded
+ * "Sign in with Solarpass" pill button.
+ *
+ * Load it with the element's `css` attribute:
+ *
+ *   <sk-login css="https://cdn…/presets/login.css"></sk-login>
+ *
+ * or once for every element via `configure({ stylesheets })`. The stylesheet
+ * is injected into the element's shadow root as a <link>, so it only applies
+ * to this element.
+ *
+ * Themable without writing CSS selectors — override these on the host element
+ * (or any ancestor), or from inline styles:
+ *
+ *   Surfaces:   --sk-font, --sk-base-100, --sk-base-200, --sk-base-300,
+ *               --sk-base-content, --sk-primary, --sk-primary-content,
+ *               --sk-radius, --sk-border
+ *   Brand button:
+ *               --sk-btn-radius, --sk-btn-border-width, --sk-btn-border-color,
+ *               --sk-btn-padding, --sk-btn-gap, --sk-btn-bg, --sk-btn-color,
+ *               --sk-btn-hover-bg, --sk-btn-hover-border-color,
+ *               --sk-btn-font-size, --sk-btn-font-weight, --sk-btn-shadow,
+ *               --sk-btn-logo-size, --sk-btn-logo-color
+ *   Signed-in:  --sk-avatar-bg, --sk-avatar-color, --sk-signout-color
+ *
+ *   sk-login { --sk-btn-radius: 0.5rem; --sk-btn-border-color: #d0d7de; }
+ *
+ * Every internal node also carries a `part` for direct styling from the host:
+ * `button`, `logo`, `label`, `guest`, `error`, `user`, `avatar`, `name`,
+ * `signout`.
+ *
+ * `:host` rules are scoped to the element's marker class (`:host(.sk-login)`,
+ * which the component sets on the host), so configuring several presets at once
+ * — the documented setup — cannot leak this element's surface (borders,
+ * background, `overflow`) onto the others.
+ */
+
+:host(.sk-login) {
+  --sk-font: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sk-base-100: oklch(100% 0 0);
+  --sk-base-200: oklch(98% 0 0);
+  --sk-base-300: oklch(95% 0 0);
+  --sk-base-content: oklch(21% 0.006 285.885);
+  --sk-primary: oklch(62% 0.0873 281deg);
+  --sk-primary-content: oklch(93% 0.034 272.788);
+  --sk-radius: 0.625rem;
+  --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+
+  /* Brand button */
+  --sk-btn-radius: 9999px;
+  --sk-btn-border-width: 1px;
+  --sk-btn-border-color: color-mix(in oklch, var(--sk-base-300) 90%, transparent);
+  --sk-btn-padding: 0.5625rem 1.125rem;
+  --sk-btn-gap: 0.625rem;
+  --sk-btn-bg: var(--sk-base-100);
+  --sk-btn-color: var(--sk-base-content);
+  --sk-btn-hover-bg: var(--sk-base-200);
+  --sk-btn-hover-border-color: color-mix(in oklch, var(--sk-base-content) 30%, transparent);
+  --sk-btn-font-size: 0.875rem;
+  --sk-btn-font-weight: 600;
+  --sk-btn-shadow: 0 1px 2px color-mix(in oklch, var(--sk-base-content) 8%, transparent);
+  --sk-btn-logo-size: 1.125rem;
+  --sk-btn-logo-color: color-mix(in oklch, var(--sk-base-content) 80%, transparent);
+
+  /* Signed-in row */
+  --sk-avatar-bg: var(--sk-primary);
+  --sk-avatar-color: var(--sk-primary-content);
+  --sk-signout-color: color-mix(in oklch, var(--sk-base-content) 70%, transparent);
+
+  display: block;
+  box-sizing: border-box;
+  font-family: var(--sk-font);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--sk-base-content);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host(.sk-login) {
+    --sk-base-100: oklch(0% 0 0);
+    --sk-base-200: oklch(20% 0.016 285.938);
+    --sk-base-300: oklch(25% 0.013 285.805);
+    --sk-base-content: oklch(97.807% 0.029 256.847);
+    --sk-primary: oklch(50% 0.0873 281deg);
+    --sk-primary-content: oklch(96% 0.018 272.314);
+    --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+    color-scheme: dark;
+  }
+}
+
+.sk-login__guest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.sk-login__error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--sk-primary);
+}
+
+/* Google-style branded button. */
+.sk-login__solarpass {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-btn-gap);
+  padding: var(--sk-btn-padding);
+  font-family: var(--sk-font);
+  font-size: var(--sk-btn-font-size);
+  font-weight: var(--sk-btn-font-weight);
+  line-height: 1.25rem;
+  color: var(--sk-btn-color);
+  background: var(--sk-btn-bg);
+  border: var(--sk-btn-border-width) solid var(--sk-btn-border-color);
+  border-radius: var(--sk-btn-radius);
+  box-shadow: var(--sk-btn-shadow);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.sk-login__solarpass:hover {
+  background: var(--sk-btn-hover-bg);
+  border-color: var(--sk-btn-hover-border-color);
+}
+
+.sk-login__solarpass:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sk-login__logo {
+  display: inline-flex;
+  color: var(--sk-btn-logo-color);
+}
+
+.sk-login__logo svg,
+.sk-login__logo--image img {
+  width: var(--sk-btn-logo-size);
+  height: var(--sk-btn-logo-size);
+  display: block;
+}
+
+.sk-login__label {
+  white-space: nowrap;
+}
+
+/* Signed-in row: initials avatar, display name, sign out. */
+.sk-login__user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.sk-login__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--sk-avatar-color);
+  background: var(--sk-avatar-bg);
+  flex: none;
+}
+
+.sk-login__name {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-login__signout {
+  margin-left: auto;
+  padding: 0.25rem 0.75rem;
+  font-family: var(--sk-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sk-signout-color);
+  background: transparent;
+  border: 1px solid var(--sk-border);
+  border-radius: var(--sk-btn-radius);
+  cursor: pointer;
+}
+
+.sk-login__signout:hover {
+  background: var(--sk-base-200);
+}

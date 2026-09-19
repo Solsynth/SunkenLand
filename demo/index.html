@@ -3,10 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>sk-replies-list — demo</title>
+    <title>SunkenLand widgets — demo</title>
     <script>
       // Stub the API with realistic snake_case wire payloads BEFORE the bundle
-      // loads. The element talks to `https://api.solian.app` via global fetch.
+      // loads. The elements talk to `https://api.solian.app` via global fetch.
+      // (Declared before REPLIES, which references it.)
+      const BOB_AVATAR =
+        "data:image/svg+xml," +
+        encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
+            '<circle cx="32" cy="32" r="32" fill="#8b6cf0"/>' +
+            '<text x="32" y="42" font-family="sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle">B</text>' +
+            "</svg>",
+        );
       const REPLIES = [
         {
           post: {
@@ -233,33 +242,240 @@
       ];
 
       window.__lastRequests = [];
-      // Inline SVG avatar so fixture images load without network access.
-      const BOB_AVATAR =
-        "data:image/svg+xml," +
-        encodeURIComponent(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
-            '<circle cx="32" cy="32" r="32" fill="#8b6cf0"/>' +
-            '<text x="32" y="42" font-family="sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle">B</text>' +
-            "</svg>",
-        );
       const reqLogEl = () => document.getElementById("reqlog");
+
+      // Demo account + publisher returned by the stubbed auth endpoints.
+      const DEMO_ACCOUNT = {
+        id: "acc_me",
+        name: "me",
+        nick: "Me",
+        language: "en",
+        profile: { bio: "Demo account" },
+        created_at: "2023-01-01T00:00:00Z",
+        updated_at: "2023-01-01T00:00:00Z",
+      };
+      const DEMO_SECOND_PUBLISHER = {
+        id: "p_me_alt",
+        name: "me-alt",
+        nick: "Me (alt)",
+        bio: null,
+        picture: null,
+        background: null,
+        verification: null,
+        account: { id: "acc_me", name: "me", nick: "Me", profile: null },
+        stat: null,
+        created_at: "2023-01-01T00:00:00Z",
+      };
+      const DEMO_PUBLISHER = {
+        id: "p_me",
+        name: "me",
+        nick: "Me",
+        bio: null,
+        picture: null,
+        background: null,
+        verification: null,
+        account: { id: "acc_me", name: "me", nick: "Me", profile: null },
+        stat: null,
+        created_at: "2023-01-01T00:00:00Z",
+      };
+
+      // Build a post wire payload for replies created through the composer.
+      // `GET /sphere/posts/{id}`: the post with its reaction summary.
+      const makePost = (id, reactionsCount, reactionsMade) => ({
+        ...makeReply("Post " + id, null),
+        id,
+        reactions_count: reactionsCount,
+        reactions_made: reactionsMade,
+      });
+
+      const makeReply = (content, parentId) => {
+        const now = new Date().toISOString();
+        return {
+          id: "r_new_" + REPLIES.length,
+          title: null,
+          description: null,
+          content,
+          content_type: 0,
+          published_at: now,
+          visibility: 1,
+          boost_count: 0,
+          upvotes: 0,
+          downvotes: 0,
+          replies_count: 0,
+          reactions_count: {},
+          reactions_made: null,
+          views_unique: 0,
+          views_total: 0,
+          is_truncated: false,
+          publisher: DEMO_PUBLISHER,
+          attachments: [],
+          tags: [],
+          replied_post: null,
+          forwarded_post: null,
+          meta: null,
+          resource_identifier: "post.r_new_" + REPLIES.length,
+          created_at: now,
+          edited_at: null,
+          updated_at: now,
+        };
+      };
+
+      // Reaction counts per post + the symbols "I" reacted with (the element
+      // reads both through `GET /sphere/posts/{id}`).
+      const REACTIONS = {
+        post_1: { thumb_up: 3, heart: 1, party: 7, cry: 2, angry: 1, laugh: 1 },
+      };
+      // The demo visitor already reacted with a heart, so signing in shows the
+      // "mine" highlight and clicking that chip takes it back.
+      const MY_REACTIONS = { post_1: ["heart"] };
+
+      // Stubbed API router: auth (token/account/publisher), post writes, and
+      // the threaded reply reads used by sk-replies-list.
       window.fetch = async (input, init) => {
-        const url = typeof input === "string" ? input : input.url;
-        const req = new URL(url, window.location.href);
+        const raw = typeof input === "string" ? input : input.url;
+        const req = new URL(raw, window.location.href);
+        const method = ((init && init.method) || "GET").toUpperCase();
+        const path = req.pathname;
+        window.__lastRequests.push({ url: path + req.search, method });
+        const logEl = reqLogEl();
+        if (logEl) logEl.textContent += "\n" + method + " " + path + req.search;
+
+        const json = (body, status, headers) =>
+          new Response(JSON.stringify(body), {
+            status: status || 200,
+            headers: Object.assign({ "content-type": "application/json" }, headers || {}),
+          });
+
+        // Auth header lookup (the client sends `Authorization`).
+        const header = (name) => {
+          const h = init && init.headers;
+          if (!h) return null;
+          if (typeof h.get === "function") return h.get(name);
+          for (const key of Object.keys(h)) {
+            if (key.toLowerCase() === name) return h[key];
+          }
+          return null;
+        };
+        // The OIDC access token is a user token for this same API too.
+        const authed =
+          header("authorization") === "Bearer at_demo" ||
+          header("authorization") === "Bearer oidc_at_demo" ||
+          header("authorization") === "Bearer at_configured_demo";
+
+        // ── OpenID Connect (Solarpass) ────────────────────────────────────
+        if (path === "/.well-known/openid-configuration") {
+          return json({
+            issuer: "https://api.solian.app",
+            authorization_endpoint: "https://id.solian.app/auth/authorize",
+            token_endpoint: "https://api.solian.app/stargate/auth/open/token",
+            userinfo_endpoint: "https://api.solian.app/stargate/auth/open/userinfo",
+            jwks_uri: "https://api.solian.app/.well-known/jwks",
+            scopes_supported: ["openid", "profile", "email"],
+            code_challenge_methods_supported: ["S256", "plain"],
+            grant_types_supported: ["authorization_code", "refresh_token"],
+            response_types_supported: ["code", "token", "id_token"],
+            token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"],
+          });
+        }
+        if (path === "/stargate/auth/open/token" && method === "POST") {
+          // OIDC token requests are form-encoded, unlike the JSON API.
+          const form = new URLSearchParams(String((init && init.body) || ""));
+          window.__lastOidcTokenRequest = Object.fromEntries(form.entries());
+          return json({
+            access_token: "oidc_at_demo",
+            expires_in: 3600,
+            refresh_token: "oidc_rt_demo",
+            token_type: "Bearer",
+            id_token: "demo.header.payload",
+            scope: "openid profile email",
+          });
+        }
+        if (path === "/stargate/auth/open/userinfo") {
+          if (header("authorization") !== "Bearer oidc_at_demo") {
+            return new Response(null, { status: 401, headers: { "www-authenticate": "Bearer" } });
+          }
+          return json({
+            sub: "acc_me",
+            name: "me",
+            preferred_username: "Me",
+            email: "me@solar.test",
+            email_verified: true,
+          });
+        }
+
+        // ── Auth ──────────────────────────────────────────────────────────
+        if (path === "/stargate/auth/token" && method === "POST") {
+          return json({
+            token: "at_demo",
+            expires_in: 3600,
+            refresh_token: "rt_demo",
+            refresh_expires_in: 604800,
+          });
+        }
+        if (path === "/stargate/auth/logout" && method === "POST") return json({});
+        if (path === "/stargate/accounts/me") {
+          // Mirrors the real API: this endpoint requires the session token.
+          return authed ? json(DEMO_ACCOUNT) : json({ message: "unauthorized" }, 401);
+        }
+        if (path === "/sphere/publishers/of/acc_me") return json([DEMO_PUBLISHER, DEMO_SECOND_PUBLISHER]);
+        if (path === "/sphere/publishers" && req.searchParams.get("mine") === "true") {
+          return authed ? json([DEMO_PUBLISHER, DEMO_SECOND_PUBLISHER]) : json({ message: "unauthorized" }, 401);
+        }
+
+        // ── Post writes ───────────────────────────────────────────────────
+        if (path === "/sphere/posts" && method === "POST") {
+          if (!authed) return json({ message: "unauthorized" }, 401);
+          const body = JSON.parse(String((init && init.body) || "{}"));
+          const created = makeReply(body.content || "", body.replied_post_id || null);
+          REPLIES.unshift({
+            post: created,
+            depth: 0,
+            parent_id: body.replied_post_id || null,
+          });
+          return json(created);
+        }
+        // ── Reactions: summary read + the writes the element performs ─────
+        if (/^\/sphere\/posts\/[^/]+$/.test(path) && method === "GET") {
+          const id = path.split("/").pop();
+          return json(
+            makePost(
+              id,
+              { ...(REACTIONS[id] || {}) },
+              authed
+                ? Object.fromEntries((MY_REACTIONS[id] || []).map((sym) => [sym, true]))
+                : null,
+            ),
+          );
+        }
+        const reactionMatch = path.match(
+          /^\/sphere\/posts\/([^/]+)\/reactions(?:\/([^/]+))?$/,
+        );
+        if (reactionMatch && (method === "POST" || method === "DELETE")) {
+          if (!authed) return json({ message: "unauthorized" }, 401);
+          const id = reactionMatch[1];
+          const counts = (REACTIONS[id] = REACTIONS[id] || {});
+          const mineList = (MY_REACTIONS[id] = MY_REACTIONS[id] || []);
+          const body =
+            method === "POST" ? JSON.parse(String((init && init.body) || "{}")) : null;
+          const symbol = (body && body.symbol) || reactionMatch[2] || "";
+          if (method === "POST") {
+            if (mineList.indexOf(symbol) === -1) {
+              counts[symbol] = (counts[symbol] || 0) + 1;
+              mineList.push(symbol);
+            }
+          } else if (mineList.indexOf(symbol) !== -1) {
+            mineList.splice(mineList.indexOf(symbol), 1);
+            counts[symbol] = (counts[symbol] || 1) - 1;
+            if (!counts[symbol]) delete counts[symbol];
+          }
+          return new Response(null, { status: 204 });
+        }
+
+        // ── Threaded replies ──────────────────────────────────────────────
         const take = Number(req.searchParams.get("take") || 6);
         const offset = Number(req.searchParams.get("offset") || 0);
         const page = REPLIES.slice(offset, offset + take);
-        window.__lastRequests.push({ url: req.pathname + req.search, method: (init && init.method) || "GET" });
-        const logEl = reqLogEl();
-        if (logEl) logEl.textContent += "\n" + req.pathname + req.search;
-        const body = JSON.stringify(page);
-        return new Response(body, {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-            "x-total": String(REPLIES.length),
-          },
-        });
+        return json(page, 200, { "x-total": String(REPLIES.length) });
       };
     </script>
     <style>
@@ -274,16 +490,31 @@
       h1 { font-size: 1.1rem; }
       .demo-block { margin-bottom: 2rem; }
       .demo-block h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
+      .hint { font-size: 0.78rem; color: #666; margin: 0.5rem 0; }
+      #use-token, #fetch-me, #fetch-react { font: inherit; font-size: 0.78rem; padding: 0.35rem 0.75rem; border: 1px solid #ccc; border-radius: 0.4rem; background: #fff; cursor: pointer; margin-right: 0.35rem; }
+      /* Customization demo: token overrides + ::part() styling from page CSS. */
+      #branded {
+        --sk-btn-border-color: #8b6cf0;
+        --sk-btn-hover-border-color: #6d4ce0;
+        --sk-btn-radius: 0.5rem;
+        --sk-btn-bg: #f7f4ff;
+        --sk-btn-logo-color: #6d4ce0;
+      }
+      #branded::part(button) {
+        border-style: dashed;
+        border-width: 2px;
+      }
       #log { font-family: ui-monospace, monospace; font-size: 0.75rem; background: #111; color: #7fdbff; padding: 0.5rem; border-radius: 0.5rem; white-space: pre-wrap; }
     </style>
   </head>
   <body>
-    <h1>sk-replies-list — demo</h1>
+    <h1>SunkenLand widgets — demo</h1>
     <p>
-      Fetch is stubbed with mock wire payloads. The preset stylesheet is
-      injected via <code>SunkenLand.configure({ stylesheets: … })</code>
-      (bundle-loaded script below), exactly as a CDN host would. See the
-      browser console / log box for <code>reply-click</code> events.
+      Fetch is stubbed with mock wire payloads (auth, publishers, post writes,
+      reply reads). The preset stylesheets are injected via
+      <code>SunkenLand.configure({ stylesheets: … })</code> (bundle-loaded
+      script below), exactly as a CDN host would. See the browser console / log
+      box for element events.
     </p>
 
     <div class="demo-block">
@@ -319,6 +550,87 @@
     </div>
 
     <div class="demo-block">
+      <h2>OAuth login (sk-login)</h2>
+      <sk-login id="login"></sk-login>
+      <p class="hint">
+        Solarpass sign-in is a real OpenID Connect client flow: discovery →
+        <code>id.solian.app/auth/authorize</code> (popup, authorization code +
+        PKCE) → <code>/stargate/auth/open/token</code>. This demo stubs the
+        provider, so clicking the button runs that exact code path against the
+        stubbed endpoints and logs the authorize URL above.
+      </p>
+    </div>
+
+    <div class="demo-block">
+      <h2>Reply composer (sk-reply-composer)</h2>
+      <sk-reply-composer
+        id="composer"
+        post="post_1"
+        placeholder="Write a reply…"
+        submit-label="Reply"
+      ></sk-reply-composer>
+      <p class="hint">
+        Signed out it shows "Sign in with Solarpass"; signed in it posts to
+        <code>POST /sphere/posts?pub=&lt;publisher&gt;</code> with
+        <code>replied_post_id=post_1</code>. The publisher chip switches between
+        the account's publishers (this demo stubs two), and the list above
+        re-fetches after posting.
+      </p>
+    </div>
+
+    <div class="demo-block">
+      <h2>Reactions (sk-reaction-list)</h2>
+      <sk-reaction-list id="reactions" post="post_1"></sk-reaction-list>
+      <p class="hint">
+        Counts come from <code>GET /sphere/posts/post_1</code>; the chip you own
+        is highlighted once you are signed in (the demo stubs you as having
+        reacted with a heart).
+        Clicking a chip or a reaction in the picker is optimistic — it calls
+        <code>POST/DELETE /sphere/posts/post_1/reactions…</code> and rolls back
+        if the request fails. Signed out, clicking starts the Solarpass popup.
+        The demo stubs six reactions so the <code>+1</code> toggle shows, and
+        renders the stickers that ship with the package
+        (<code>dist/stickers/</code>, via <code>configure({ stickerUrl })</code>).
+      </p>
+    </div>
+
+    <div class="demo-block">
+      <h2>Host-provided token (no login button)</h2>
+      <button id="use-token" type="button">configure({ token })</button>
+      <p class="hint">
+        A host that already holds a credential can skip the login button:
+        clicking this configures a ready-made access token, and the widgets
+        switch to the signed-in state on their own (resolved through the API).
+        The demo stubs it as <code>at_configured_demo</code>.
+      </p>
+    </div>
+
+    <div class="demo-block">
+      <h2>Customization (tokens + ::part)</h2>
+      <sk-login
+        id="branded"
+        label="Continue with Solar"
+      ></sk-login>
+      <p class="hint">
+        This one overrides <code>--sk-btn-*</code> tokens and styles
+        <code>::part(button)</code> from the page CSS (2px dashed border,
+        square-ish radius, custom label).
+      </p>
+    </div>
+
+    <div class="demo-block">
+      <h2>apiFetch (authenticated SDK calls)</h2>
+      <p class="hint">
+        <code>SunkenLand.apiFetch(path, options)</code> attaches the session
+        token, refreshes once on 401, snake_cases bodies, and can validate with
+        the package's zod schemas. Needs a signed-in session — use the simulate
+        button above first.
+      </p>
+      <button id="fetch-me" type="button">GET /stargate/accounts/me</button>
+      <button id="fetch-react" type="button">POST /sphere/posts/post_1/reactions</button>
+    </div>
+
+    <div class="demo-block">
       <h2>Request log</h2>
       <pre id="reqlog">(fetches appear here)</pre>
     </div>
@@ -348,10 +660,41 @@
     <script src="../dist/sunk-enland.iife.js"></script>
     <script>
       // Configure the library: preset stylesheets injected into every
-      // element's shadow root, plus the API origin if it ever differs.
+      // element's shadow root, the API origin, and the Solarpass OIDC client
+      // (a registered app id + redirect URI — the redirect defaults to this
+      // page).
       SunkenLand.configure({
-        stylesheets: "../dist/presets/replies-list.css",
+        // Reaction stickers, copied from FloatLand's own sticker set.
+        stickerUrl: "../dist/stickers/{symbol}.webp",
+        css: [
+          "../dist/presets/replies-list.css",
+          "../dist/presets/login.css",
+          "../dist/presets/reply-composer.css",
+          "../dist/presets/reactions.css",
+        ],
+        oidc: { clientId: "sunkenland-demo" },
       });
+
+      // Demo-only: replace the provider popup with a stub that captures the
+      // authorize URL and relays an authorization code back — the same
+      // postMessage contract a real popup's redirect page fulfils.
+      window.open = (url) => {
+        log("popup → " + url);
+        const fake = { closed: false, focus() {}, close() {} };
+        setTimeout(() => {
+          const authorizeUrl = new URL(String(url));
+          window.postMessage(
+            {
+              type: "sunkenland:oidc-callback",
+              code: "demo-authorization-code",
+              state: authorizeUrl.searchParams.get("state"),
+            },
+            window.location.origin,
+          );
+          fake.closed = true;
+        }, 300);
+        return fake;
+      };
 
       const log = (msg) => {
         const el = document.getElementById("log");
@@ -360,6 +703,59 @@
       const list = document.getElementById("list");
       list.addEventListener("reply-click", (e) => {
         log("reply-click detail.postId = " + e.detail.postId + " (composed=" + e.composed + ")");
+      });
+      const composer = document.getElementById("composer");
+      composer.addEventListener("reply-posted", (e) => {
+        log("reply-posted detail.postId = " + e.detail.postId + " post.id = " + e.detail.post.id);
+      });
+      const reactions = document.getElementById("reactions");
+      reactions.addEventListener("reaction-added", (e) =>
+        log(
+          "reaction-added symbol=" + e.detail.symbol + " attitude=" + e.detail.attitude +
+            " count=" + e.detail.count,
+        ),
+      );
+      reactions.addEventListener("reaction-removed", (e) =>
+        log("reaction-removed symbol=" + e.detail.symbol + " count=" + e.detail.count),
+      );
+      const login = document.getElementById("login");
+      login.addEventListener("sign-in", () => log("login sign-in"));
+      login.addEventListener("sign-out", () => log("login sign-out"));
+      window.addEventListener("sunkenland:signin", (e) => {
+        log("window sunkenland:signin user = " + (e.detail.user && e.detail.user.name));
+      });
+      window.addEventListener("sunkenland:reply-posted", (e) => {
+        log("window sunkenland:reply-posted postId = " + e.detail.postId);
+      });
+
+      // Host-provided credential: no login button involved.
+      document.getElementById("use-token").addEventListener("click", async () => {
+        SunkenLand.configure({ token: "at_configured_demo" });
+        const user = await SunkenLand.session.syncProvisioned();
+        log("configure({ token }) -> " + user.state + (user.user ? " as @" + user.user.name : ""));
+      });
+
+      // apiFetch: authenticated calls for endpoints the elements don't cover.
+      document.getElementById("fetch-me").addEventListener("click", async () => {
+        try {
+          const account = await SunkenLand.apiFetch("/stargate/accounts/me", {
+            schema: SunkenLand.snAccountSchema,
+          });
+          log("apiFetch /stargate/accounts/me -> id=" + account.id + " name=" + account.name);
+        } catch (err) {
+          log("apiFetch /stargate/accounts/me failed: " + err.message);
+        }
+      });
+      document.getElementById("fetch-react").addEventListener("click", async () => {
+        try {
+          await SunkenLand.apiFetch("/sphere/posts/post_1/reactions", {
+            method: "POST",
+            body: { symbol: "thumb", attitude: 1 },
+          });
+          log("apiFetch reaction posted on post_1 (204)");
+        } catch (err) {
+          log("apiFetch reaction failed: " + err.message);
+        }
       });
 
       // Report page-visible state so the element can be verified without
@@ -379,8 +775,8 @@
           lines.push("items=" + sr.querySelectorAll("ul.sk-replies__list > li.sk-reply").length);
           lines.push("header=" + (sr.querySelector(".sk-replies__header") || {}).textContent);
           lines.push("loadMore=" + (sr.querySelector(".sk-load-more") || {}).textContent);
-          lines.push("viewAll=" + (sr.querySelector(".sk-view-all") || {}).getAttribute("href"));
-          lines.push("cssLink=" + (sr.querySelector("link[rel=stylesheet]") || {}).getAttribute ? (sr.querySelector("link[rel=stylesheet]").getAttribute("href")) : null);
+          lines.push("viewAll=" + (sr.querySelector(".sk-view-all")?.getAttribute("href") ?? "(none)"));
+          lines.push("cssLink=" + (sr.querySelector("link[rel=stylesheet]")?.getAttribute("href") ?? "(none)"));
           const first = sr.querySelector(".sk-reply");
           if (first) {
             lines.push("firstDepth=" + first.style.getPropertyValue("--sk-depth"));
@@ -404,6 +800,25 @@
           lines.push("plainCssLink=" + Boolean(ps.querySelector("link[rel=stylesheet]")));
           lines.push("plainHeader=" + (ps.querySelector(".sk-replies__header") || {}).textContent);
         }
+        const loginSr = login && login.shadowRoot;
+        if (loginSr) {
+          const button = loginSr.querySelector(".sk-login__solarpass");
+          lines.push("loginButton=" + (button ? button.textContent.trim() : "(signed in)"));
+          lines.push("loginUser=" + ((loginSr.querySelector(".sk-login__name") || {}).textContent || "-"));
+          lines.push("loginAvatar=" + ((loginSr.querySelector(".sk-login__avatar") || {}).textContent || "-"));
+        }
+        const composerSr = composer && composer.shadowRoot;
+        if (composerSr) {
+          const guest = composerSr.querySelector(".sk-composer__guest");
+          const textarea = composerSr.querySelector("textarea");
+          lines.push("composerState=" + (textarea ? "form" : guest ? "guest" : "?"));
+          lines.push("composerButton=" + ((composerSr.querySelector(".sk-composer__solarpass") || {}).textContent || "-").trim());
+          lines.push("composerAs=" + (((composerSr.querySelector(".sk-composer__as") || {}).textContent || "-")).trim());
+          lines.push("composerInput=" + (textarea ? "yes" : "no"));
+          lines.push("composerError=" + (((composerSr.querySelector(".sk-composer__error") || {}).textContent || "-")).trim());
+        }
+        lines.push("sessionState=" + SunkenLand.session.state);
+        lines.push("sessionUser=" + (SunkenLand.session.user ? SunkenLand.session.user.name : "-"));
         diag.textContent = lines.join("\n");
       };
       setTimeout(dump, 700);
