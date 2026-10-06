@@ -12,6 +12,7 @@ import { dispatchWindowEvent, REPLY_POSTED_EVENT } from "../events";
 import { getSession, type SessionState } from "../session";
 import { getAvatarUrl, getDisplayName, getInitials } from "../utils/format";
 import { getHostElement, markHost } from "../utils/host";
+import AvatarImage from "./AvatarImage.vue";
 import SolarPassMark from "./SolarPassMark.vue";
 
 /**
@@ -152,7 +153,7 @@ const signedIn = computed(() => state.value === "signed-in");
 const pinned = computed(() => Boolean(props.pub));
 const publisherName = computed(() => currentPublisher.value?.nick || currentPublisher.value?.name || "");
 const publisherHandle = computed(() => currentPublisher.value?.name ?? "");
-const publisherAvatar = computed(() => getAvatarUrl(currentPublisher.value));
+const publisherAvatar = computed(() => getAvatarUrl(currentPublisher.value, client.baseUrl));
 const canSubmit = computed(
   () =>
     signedIn.value &&
@@ -366,7 +367,11 @@ watch(
             @click.stop="togglePicker"
           >
             <span class="sk-composer__publisher-avatar" part="publisher-avatar" aria-hidden="true">
-              <img v-if="publisherAvatar" :src="publisherAvatar" alt="" />
+              <AvatarImage
+                v-if="publisherAvatar"
+                :publisher="currentPublisher"
+                :base-url="client.baseUrl"
+              />
               <template v-else>{{ currentPublisher ? getInitials(publisherName) : "?" }}</template>
             </span>
             <span class="sk-composer__publisher-name" part="publisher-name">
@@ -394,7 +399,11 @@ watch(
                 @click="selectPublisher(pub)"
               >
                 <span class="sk-composer__publisher-avatar" aria-hidden="true">
-                  <img v-if="getAvatarUrl(pub)" :src="getAvatarUrl(pub)" alt="" />
+                  <AvatarImage
+                    v-if="getAvatarUrl(pub, client.baseUrl)"
+                    :publisher="pub"
+                    :base-url="client.baseUrl"
+                  />
                   <template v-else>{{ getInitials(getDisplayName(pub)) }}</template>
                 </span>
                 <span class="sk-composer__publisher-option-text">

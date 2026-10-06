@@ -16,6 +16,47 @@
             '<text x="32" y="42" font-family="sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle">B</text>' +
             "</svg>",
         );
+      // Drive files for the media demo: an inline image (so the demo renders
+      // without network access) plus a video and a document whose bytes the
+      // elements resolve from the drive endpoint by id. `sk-media` /
+      // `sk-media-collection` read their metadata through
+      // `GET /drive/files/{id}/info` (stubbed below).
+      const DEMO_ATTACHMENTS = [
+        {
+          id: "a_demo_img",
+          name: "screenshot.png",
+          url:
+            "data:image/svg+xml," +
+            encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">' +
+                '<rect width="640" height="360" fill="#2b2140"/>' +
+                '<text x="320" y="196" font-family="sans-serif" font-size="44" fill="#ffffff" text-anchor="middle">screenshot</text>' +
+                "</svg>",
+            ),
+          mime_type: "image/png",
+          has_compression: true,
+          has_thumbnail: true,
+          file_meta: { width: 640, height: 360 },
+        },
+        {
+          id: "a_demo_clip",
+          name: "demo-clip.mp4",
+          url: null,
+          mime_type: "video/mp4",
+          has_compression: false,
+          has_thumbnail: true,
+          file_meta: { width: 1280, height: 720 },
+        },
+        {
+          id: "a_demo_spec",
+          name: "spec.pdf",
+          url: null,
+          mime_type: "application/pdf",
+          has_compression: false,
+          has_thumbnail: false,
+          file_meta: {},
+        },
+      ];
       const REPLIES = [
         {
           post: {
@@ -183,7 +224,7 @@
               stat: null,
               created_at: "2023-02-01T00:00:00Z",
             },
-            attachments: [{ id: "a1", name: "screenshot.png", url: "https://img.example/a1.png", mime_type: "image/png", has_compression: false, has_thumbnail: true, file_meta: {} }],
+            attachments: DEMO_ATTACHMENTS,
             tags: [],
             replied_post: null,
             forwarded_post: null,
@@ -434,6 +475,13 @@
           });
           return json(created);
         }
+        // ── Drive files: metadata by id (`sk-media file="…"`) ─────────────
+        const fileInfoMatch = path.match(/^\/drive\/files\/([^/]+)\/info$/);
+        if (fileInfoMatch && method === "GET") {
+          const id = decodeURIComponent(fileInfoMatch[1]);
+          const file = DEMO_ATTACHMENTS.filter((candidate) => candidate.id === id)[0];
+          return file ? json(file) : json({ message: "not found" }, 404);
+        }
         // ── Reactions: summary read + the writes the element performs ─────
         if (/^\/sphere\/posts\/[^/]+$/.test(path) && method === "GET") {
           const id = path.split("/").pop();
@@ -595,6 +643,27 @@
     </div>
 
     <div class="demo-block">
+      <h2>Media (sk-media / sk-media-collection)</h2>
+      <sk-media file="a_demo_clip"></sk-media>
+      <sk-media-collection files="a_demo_img, a_demo_clip, a_demo_spec" max-visible="2"></sk-media-collection>
+      <p class="hint">
+        <code>sk-media</code> renders one drive file like FloatLand's
+        <code>AttachmentItem</code> (video with a play overlay, image through
+        unlazy, <code>&lt;audio controls&gt;</code>, or a file card);
+        <code>sk-media-collection</code> renders a list like
+        <code>AttachmentGrid</code> — one file fills a box at its aspect ratio,
+        several become a snapping list with a <code>n/total</code> counter and
+        scroll arrows. Ids are resolved through
+        <code>GET /drive/files/{id}/info</code> for the name, MIME type,
+        dimensions, and blurhash; a file whose wire object has
+        <code>url: null</code> then loads from <code>…/drive/files/{id}</code>.
+        Clicking one dispatches <code>media-click</code> (logged below) and opens
+        the file in a new tab unless the event is canceled. Reply attachments
+        render through the same grid — see the reply list above.
+      </p>
+    </div>
+
+    <div class="demo-block">
       <h2>Host-provided token (no login button)</h2>
       <button id="use-token" type="button">configure({ token })</button>
       <p class="hint">
@@ -668,6 +737,7 @@
         stickerUrl: "../dist/stickers/{symbol}.webp",
         css: [
           "../dist/presets/replies-list.css",
+          "../dist/presets/media.css",
           "../dist/presets/login.css",
           "../dist/presets/reply-composer.css",
           "../dist/presets/reactions.css",

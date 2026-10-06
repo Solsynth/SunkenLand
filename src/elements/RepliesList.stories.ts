@@ -16,6 +16,10 @@ import { configure } from "../config";
  * The fetch stub in `.storybook/fixtures.ts` serves the API wire payloads, so
  * the interactions below (pagination, events, live config re-sync) are real
  * tests that also run headlessly via `bun run test` (Vitest + browser).
+ *
+ * The toolbar's **API** switch flips the stub to **Live (api.solian.app)**, and
+ * the `LivePost` story below uses `parameters: { liveApi: true }` to do the
+ * same: edit `post` to any real post id and the element reads the real thread.
  */
 
 interface RepliesListArgs {
@@ -49,6 +53,13 @@ const render = (args: RepliesListArgs) => html`
     css="${ifDefined(args.css)}"
   ></sk-replies-list>
 `;
+
+/**
+ * unlazy renders the real URL as `data-src` and swaps it into `src` once the
+ * image is preloaded (removing `data-src`), so read both.
+ */
+const srcOf = (img: Element | null | undefined): string | null =>
+  img?.getAttribute("data-src") ?? img?.getAttribute("src") ?? null;
 
 const meta: Meta<RepliesListArgs> = {
   title: "Elements/sk-replies-list",
@@ -105,6 +116,90 @@ export const MissingPost: Story = {
 /** A post with no replies renders an empty state (fetch returns x-total 0). */
 export const Empty: Story = {
   args: { post: "post_empty" },
+};
+
+/**
+ * Real data: `parameters.liveApi` makes the stub forward to
+ * `https://api.solian.app`, so `post` is a real post id — paste any id from
+ * solian.app (the default is a public post that has replies).
+ */
+export const LivePost: Story = {
+  args: {
+    post: "01a11173-2a88-72a4-87cb-546aaddb046d",
+    queryTerm: undefined,
+    viewAllUrl: "https://solian.app/posts/01a11173-2a88-72a4-87cb-546aaddb046d",
+  },
+  parameters: { liveApi: true },
+  // No play function, and `!test` keeps the Vitest addon from ever fetching
+  // the real API from CI.
+  tags: ["!test"],
+};
+
+/**
+ * Reply attachments render through the same media grid `sk-media` uses, and an
+ * avatar whose wire object has `url: null` resolves through the drive endpoint
+ * by file id (the shape the real API sends).
+ */
+export const Attachments: Story = {
+  args: { take: 6, queryTerm: undefined },
+  play: async ({ canvasElement, step }) => {
+    const el = canvasElement.querySelector("sk-replies-list");
+    if (!el || !el.shadowRoot) throw new Error("element not upgraded");
+    const sr = el.shadowRoot;
+    const replies = () => [...sr.querySelectorAll<HTMLElement>(".sk-reply")];
+
+    await step("an avatar without a direct URL resolves through the drive endpoint", async () => {
+      await waitFor(() => expect(replies().length).toBe(5));
+      // Row 3 is Carol's reply: `picture: { id, url: null }`.
+      await expect(srcOf(replies()[2]?.querySelector(".sk-reply__avatar img"))).toBe(
+        "https://api.solian.app/drive/files/f_carol",
+      );
+    });
+
+    await step("a lone attachment fills a box at its aspect ratio", async () => {
+      const box = replies()[2]?.querySelector(".sk-media__single");
+      await expect(box).not.toBeNull();
+      await expect(srcOf(box?.querySelector("img"))).toBe(
+        "https://api.solian.app/drive/files/a_single_img",
+      );
+      await expect(parseFloat((box as HTMLElement).style.aspectRatio)).toBeCloseTo(800 / 450, 3);
+    });
+
+    await step("several attachments render as a strip with a counter", async () => {
+      const row = replies()[3];
+      await expect(row?.querySelectorAll(".sk-media__item").length).toBe(4);
+      await expect(row?.querySelector(".sk-media__counter")?.textContent?.trim()).toBe("1/4");
+      await expect(row?.querySelector(".sk-media__video")).not.toBeNull();
+      await expect(row?.querySelector(".sk-media__audio")).not.toBeNull();
+      await expect(row?.querySelector(".sk-media__file")).not.toBeNull();
+    });
+
+    await step("clicking an attachment dispatches media-click, not reply-click", async () => {
+      const row = replies()[3];
+      let replyClicks = 0;
+      el.addEventListener("reply-click", () => replyClicks++, { once: true });
+      const fired = new Promise<{ postId: string; index: number; url: string }>((resolve) => {
+        el.addEventListener(
+          "media-click",
+          (event) => {
+            const detail = (event as CustomEvent<{ postId: string; index: number; url: string }>)
+              .detail;
+            resolve({ postId: detail.postId, index: detail.index, url: detail.url });
+          },
+          { once: true },
+        );
+      });
+      // Tile 2 is the video: no direct `url` fixture, so it must resolve by id.
+      const tile = row?.querySelectorAll<HTMLElement>(".sk-media__item")[1];
+      if (!tile) throw new Error("video attachment tile missing");
+      tile.click();
+      const detail = await fired;
+      await expect(detail.postId).toBe("r4");
+      await expect(detail.index).toBe(1);
+      await expect(detail.url).toBe("https://api.solian.app/drive/files/a_reply_clip");
+      await expect(replyClicks).toBe(0);
+    });
+  },
 };
 
 /** The element can be registered under a custom tag via `defineRepliesList`. */

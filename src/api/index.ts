@@ -49,3 +49,5 @@ export {
 
 export { PostsApi, postsApi } from "./posts";
 export type { ReplyListFilters, FetchThreadedRepliesOptions } from "./posts";
+
+export { DriveApi, driveApi } from "./drive";

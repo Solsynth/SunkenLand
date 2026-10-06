@@ -22,6 +22,7 @@ export const snFileAttachmentSchema = z.object({
   hasThumbnail: z.boolean(),
   fileMeta: z.record(z.string(), z.unknown()),
 });
+export type SnFileAttachment = z.infer<typeof snFileAttachmentSchema>;
 
 /** Author account embedded in a publisher. */
 export const snPostAccountSchema = z.object({
@@ -73,7 +74,9 @@ export type SnPublisher = z.infer<typeof snPublisherSchema>;
 export const snTagSchema = z.object({
   id: snId,
   slug: z.string(),
-  name: z.string(),
+  // Tags created by auto-tagging carry no curated name — the wire sends
+  // `null`, not an omission.
+  name: z.string().nullable(),
 });
 
 const snPostBaseSchema = z.object({

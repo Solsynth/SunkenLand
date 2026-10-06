@@ -9,8 +9,9 @@ Ported from FloatLand's API layer and adapted for third-party hosts: elements
 talk to the API directly with a pluggable access-token provider instead of
 relying on a same-origin server session.
 
-The bundle embeds its own Vue, so nothing is Vue-specific at runtime; `vue` and
-`zod` are declared as dependencies because the emitted `.d.ts` references them.
+The bundle embeds its own Vue, so nothing is Vue-specific at runtime; `vue`,
+`zod`, and `@unlazy/vue` are declared as dependencies because the emitted
+`.d.ts` references them.
 
 ## Install
 
@@ -82,6 +83,10 @@ Server routes can use the package's API layer directly — `import { createApiCl
 
 <sk-reaction-list post="post_1"></sk-reaction-list>
 
+<sk-media file="01M48SNHMZQ34TXZKRMJQX7JG1"></sk-media>
+
+<sk-media-collection files="01M48SNHMZQ34TXZKRMJQX7JG1, 01M49QXKG9AK9WMYFC4RMSS26X"></sk-media-collection>
+
 <sk-login></sk-login>
 ```
 
@@ -91,6 +96,7 @@ SunkenLand.configure({
   baseUrl: "https://api.solian.app",
   css: [
     "/presets/replies-list.css",
+    "/presets/media.css",
     "/presets/login.css",
     "/presets/reply-composer.css",
     "/presets/reactions.css",
@@ -141,11 +147,70 @@ Threaded replies for a parent post. Public reads, no login required.
 - Attributes: `post` (required), `take`, `offset`, `query-term`, `realm`,
   `media`, `order-desc`, `type`, `pub`, `header`, `view-all-url`, `css`,
   `base-url`
-- Events: `reply-click` (`detail = { postId, post }`)
+- Events: `reply-click` (`detail = { postId, post }`), and `media-click`
+  (`detail = { postId, post, index, file, url }`) when a reply's attachment is
+  clicked — cancelable, nothing opens by default
 - Slots: `header`, `loading`, `error`, `empty`, `load-more`, `view-all`
   (error overrides can read the message from the host's `data-error`)
+- A reply's attachments render through the
+  [`sk-media-collection`](#sk-media-collection) grid, so a reply's
+  image/video/audio/file looks exactly like a post's
 - Re-fetches automatically when a reply to the same `post` is posted on the
   page (`sunkenland:reply-posted`)
+
+### `sk-media`
+
+**One** drive file, rendered the way FloatLand's `AttachmentItem` renders it:
+an image (through unlazy), a video with a play overlay, an `<audio controls>`,
+or a file card. The box takes the file's aspect ratio, capped at 500px tall.
+
+- Attributes: `file` (drive file id), `fit` (`cover` default, or `contain`),
+  `css`, `base-url`
+- Properties: `attachment` — one file object set from JavaScript
+  (`el.attachment = post.attachments[0]`), which skips the metadata request
+- Events: `media-click` (`detail = { file, url }`) — cancelable. Unless the host
+  calls `preventDefault()`, the default action opens the file in a new tab.
+- Slots: `loading`, `error` (error overrides can read the message from the
+  host's `data-error`)
+- Parts: `single`, `backdrop`, `image`, `video`, `play`, `audio`, `file`,
+  `icon`, `name`, `state`, `error`
+
+A list belongs to `sk-media-collection`; several ids on `sk-media` report that
+instead of silently rendering the first.
+
+### `sk-media-collection`
+
+**A list** of drive files — a post's attachments, a gallery of ids — the
+embeddable port of FloatLand's `AttachmentGrid`: one file fills a box at its
+aspect ratio (with a blurred backdrop copy in `flush` presentation), several
+become a snapping horizontal list with a `n/total` counter, scroll arrows, and a
+"Show N more" toggle.
+
+- Attributes: `files` (drive file ids, comma/whitespace separated — one
+  metadata request per id), `max-visible` (items before the "Show N more"
+  toggle, default 6), `flush` (full-bleed single file over a blurred copy of the
+  image), `fit` (`cover` default, or `contain`), `css`, `base-url`
+- Properties: `attachments` — a file array set from JavaScript
+  (`el.attachments = post.attachments`), which renders without any request.
+  This is how `sk-replies-list` renders replies' attachments through the same
+  grid.
+- Events: `media-click` (`detail = { index, file, url }`) — cancelable, default
+  action opens the file in a new tab
+- Slots: `loading`, `error`, `empty`
+- Parts: `media`, `single`, `backdrop`, `item`, `image`, `video`, `play`,
+  `audio`, `file`, `icon`, `name`, `counter`, `scroll`, `arrow-prev`,
+  `arrow-next`, `more`, `state`, `error`, `empty`
+
+Both resolve a file id through `GET /drive/files/{id}/info` (public read) for
+the name, MIME type, dimensions, and blurhash — no post involved — and both hook
+into the `presets/media.css` preset. They share the `sk-media` host marker
+(`sk-media.sk-media`, `sk-media-collection.sk-media`).
+
+Files the API returns without a public URL (`url: null`, which is the norm for
+publisher pictures) are served from the drive endpoint by id —
+`https://api.solian.app/drive/files/{id}` — through the exported `getFileUrl`,
+the same helper `getAvatarUrl` uses for avatars. See
+[Drive files](#drive-files) below.
 
 ### `sk-login`
 
@@ -330,9 +395,16 @@ Three mechanisms, all host-side — no need to fork the elements.
 Presets are injected per element as `<link>`s, but hosts configure every preset
 at once, so each preset scopes its rules to a marker class the component sets on
 its host (`sk-replies-list.sk-replies`, `sk-login.sk-login`,
-`sk-reply-composer.sk-composer`, `sk-reaction-list.sk-reactions`). That keeps
-one preset from styling — or clipping, via `overflow` — another element. The
-marker also survives custom tag names (`defineReactionList("my-reactions")`).
+`sk-reply-composer.sk-composer`, `sk-reaction-list.sk-reactions`,
+`sk-media.sk-media`, `sk-media-collection.sk-media` — the two media elements
+share one family marker because they share one preset). That keeps one preset
+from styling — or clipping, via `overflow` — another element. The marker also
+survives custom tag names (`defineReactionList("my-reactions")`).
+
+`presets/replies-list.css` imports `presets/media.css` (both ship in
+`dist/presets/`), because reply attachments render through the media grid: the
+grid's rules only match its own `.sk-media-grid` / `.sk-media__*` markup, and
+the reply list's host tokens theme it.
 
 **1. `--sk-*` custom properties.** The presets are built entirely from tokens,
 so overriding them re-skins the widget without writing selectors:
@@ -372,6 +444,8 @@ it directly (including properties the tokens don't cover):
 sk-login::part(button) { border-style: dashed; text-transform: uppercase; }
 sk-reply-composer::part(submit) { letter-spacing: 0.05em; }
 sk-replies-list::part(reply) { border-left: 2px solid currentColor; }
+sk-media::part(video) { border-radius: 12px; }
+sk-media-collection::part(item) { border-radius: 12px; }
 ```
 
 Parts — `sk-login`: `guest`, `error`, `button`, `logo`, `label`, `user`,
@@ -379,7 +453,12 @@ Parts — `sk-login`: `guest`, `error`, `button`, `logo`, `label`, `user`,
 `logo`, `label`, `form`, `meta`, `as`, `input`, `bar`, `count`, `submit`,
 `error`. `sk-replies-list`: `header`, `count`, `list`, `reply`, `avatar`,
 `body`, `meta`, `author`, `handle`, `time`, `content`, `attachments`, `stats`,
-`state`, `error`, `empty`, `load-more`, `view-all`.
+`state`, `error`, `empty`, `load-more`, `view-all`. `sk-media`: `single`,
+`backdrop`, `image`, `video`, `play`, `audio`, `file`, `icon`, `name`, `state`,
+`error`. `sk-media-collection`: `media`, `single`, `backdrop`, `item`, `image`,
+`video`, `play`, `audio`, `file`, `icon`, `name`, `counter`, `scroll`,
+`arrow-prev`, `arrow-next`, `more`, `state`, `error`, `empty` — and the reply
+list exposes those same media parts for its replies' attachments.
 
 Button text and icon are attributes too — `label="Continue with Solar"`,
 `icon="/acme-mark.svg"`, or `icon=""` to drop the mark.
@@ -415,13 +494,44 @@ await SunkenLand.apiFetch("/sphere/posts/post_1/replies/threaded", { auth: false
 `createApiClient(overrides?)` returns the same wiring as an `ApiClient`, for
 hosts that want `requestWithHeaders` or a long-lived instance.
 
+## Drive files
+
+The API returns file objects with `url: null` — the bytes live at the drive
+endpoint by id. Hosts rendering the same files (avatars, attachments, markdown
+images) need the same URL shape the elements use, so the helpers are exported:
+
+```js
+import { getFileUrl, getAvatarUrl, getFileKind, getBlurhash, getImageSize } from "@solsynth/sunken-land";
+
+getFileUrl("a1b2c3");                                  // https://api.solian.app/drive/files/a1b2c3
+getFileUrl("a1b2c3", { variant: "thumbnail" });        // …/drive/files/a1b2c3?thumbnail=true
+getFileUrl("a1b2c3", { baseUrl: "https://api.example" });
+
+getAvatarUrl(post.publisher);                          // picture.url, else the file id
+getFileKind({ id: "a1", name: "clip.mp4", mimeType: "" });   // "video" (extension fallback)
+
+// unlazy placeholder inputs for a file object
+getBlurhash(file);                                     // file_meta.blurhash
+getImageSize(file);                                    // { width, height } from file_meta
+```
+
+`url` always wins when present; `getFileUrl` only fills the gap, which is why
+reading `file.url` alone leaves avatars blank.
+
+Every image the elements render (avatars and attachments) loads through
+[unlazy](https://unlazy.byjohann.dev/integrations/vue) — `@unlazy/vue`'s
+`UnLazyImage`: the URL sits in `data-src` and swaps into `src` once preloaded,
+and a file's `file_meta.blurhash` decodes into the placeholder (with
+`file_meta.width/height` keeping its aspect ratio). Same approach FloatLand's
+`FileImage` uses; no host configuration.
+
 ## API layer
 
 Framework-agnostic, zod-validated client. Responses are snake_case on the wire
 and validated as camelCase; request bodies are validated then snake_cased.
 
 ```js
-import { configureApi, authApi, accountApi, postsApi } from "@solsynth/sunken-land";
+import { configureApi, authApi, accountApi, postsApi, driveApi } from "@solsynth/sunken-land";
 
 configureApi({ baseUrl: "https://api.solian.app", getAccessToken: session.getAccessToken });
 
@@ -429,6 +539,7 @@ await postsApi.fetchPostRepliesThreaded("post_1", { take: 6 });           // pub
 await postsApi.createReply("post_1", "Nice!", { publisher: "me" });       // session
 await postsApi.reactToPost("post_1", "thumb", 1);                         // session
 await postsApi.removeReaction("post_1", "thumb");                         // session
+await driveApi.fetchFileInfo("01M48SNHMZQ34TXZKRMJQX7JG1");               // public
 await accountApi.getUserInfo();
 await authApi.exchangeAuthorizationCode(code);
 ```
@@ -446,7 +557,8 @@ tokens, Nunito, light/dark via `prefers-color-scheme`. Injected into the shadow
 root as `<link>`s; theme them by overriding the `--sk-*` custom properties on
 the host element.
 
-- `presets/replies-list.css`
+- `presets/replies-list.css` (imports `media.css` for reply attachments)
+- `presets/media.css`
 - `presets/login.css`
 - `presets/reply-composer.css`
 - `presets/reactions.css`
@@ -557,7 +669,10 @@ bun run build      # dist ESM + IIFE bundles, preset copies, .d.ts
 
 - `demo/index.html` — the elements on a plain HTML page with a stubbed API.
 - `.storybook/fixtures.ts` — the fetch stub (auth, publishers, writes, reply
-  reads) used by stories and tests.
+  reads) used by stories and tests. Storybook's **API** toolbar switches it to
+  **Live (api.solian.app)**, which forwards requests to the real API instead of
+  fixtures — the `sk-replies-list` `LivePost` story uses that (via
+  `parameters: { liveApi: true }`) to render a real post id.
 
 ## Notes
 

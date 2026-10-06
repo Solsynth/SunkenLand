@@ -5,6 +5,7 @@
     "": {
       "name": "@solar-network/sunken-land",
       "dependencies": {
+        "@unlazy/vue": "^2.0.1",
         "vue": "^3.5.43",
         "zod": "^4.0.0",
       },
@@ -452,6 +453,10 @@
 
     "@typescript-native-bridge/win32-x64": ["@typescript-native-bridge/win32-x64@6.0.3-bridge.17.tsgo.7.0.2", "", { "os": "win32", "cpu": "x64" }, "sha512-gbTIfontb1I9SomZw5mXn+k2ekQnBkRu3lmCy4zuHvEqNFwFFA936CkwGpgifs/SK/fU2B2hGcksm1pQJ6w6mg=="],
 
+    "@unlazy/core": ["@unlazy/core@2.0.1", "", {}, "sha512-zARfhkFhALS5EGdym22E8OrNSEbHDhG8XBUFHr8I435U7JnM8r4Y8g6I+utdKMrxJARcAJx7WGDUo/h9CntWCg=="],
+
+    "@unlazy/vue": ["@unlazy/vue@2.0.1", "", { "dependencies": { "unlazy": "2.0.1" }, "peerDependencies": { "vue": "^3.5" } }, "sha512-83sWINwU8hesSnER6C6HUgZTK45fEifQQm6eEuckiLMN1KaU5RoX1hxOzeWalMjyaDDJs3rM/xUXCkjirbPmHQ=="],
+
     "@vitejs/plugin-vue": ["@vitejs/plugin-vue@6.0.9", "", { "dependencies": { "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0", "vue": "^3.2.25" } }, "sha512-rD/MORlhaZMlXWW0rEn4FB4wMinWC0z/D7Ye160S5+Rs1mC8ZDAdcDp4SjKfUhG5t8q1ktcPVw4xuTkPRlzrSA=="],
 
     "@vitest/browser": ["@vitest/browser@5.0.1", "", { "dependencies": { "@blazediff/core": "1.10.0", "@vitest/mocker": "5.0.1", "@vitest/ui": "5.0.1", "@vitest/utils": "5.0.1", "magic-string": "^1.2.3", "pngjs": "^7.0.0", "sirv": "^3.0.2", "tinyrainbow": "^3.1.1", "ws": "^8.21.3" }, "peerDependencies": { "vitest": "5.0.1" } }, "sha512-s2UroEhP2BZPoen1qrXXTtVqnUcs6y2sxMLGCZ8tZDkH2iM/6tTC2GVTPCgF+oVF3X5M6wC/X2O0MvvoHNmH0Q=="],
@@ -885,6 +890,8 @@
     "undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
 
     "universalify": ["universalify@2.0.1", "", {}, "sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw=="],
+
+    "unlazy": ["unlazy@2.0.1", "", { "dependencies": { "@unlazy/core": "2.0.1" } }, "sha512-BihVSf6XpmWzcXfkDFih+R2s2sbiyi5oJiH7ed3CzMZqXBmdbal5iTz77bglCL9jZJZ0i/7NP6oPU/JHx63mZA=="],
 
     "unplugin": ["unplugin@2.3.11", "", { "dependencies": { "@jridgewell/remapping": "^2.3.5", "acorn": "^8.15.0", "picomatch": "^4.0.3", "webpack-virtual-modules": "^0.6.2" } }, "sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww=="],
 

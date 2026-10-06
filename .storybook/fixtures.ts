@@ -13,12 +13,20 @@
  * - `POST /sphere/posts` → creates a reply; the FIRST attempt returns 401 so
  *   the client's refresh chain is exercised; success prepends to the pool
  * - `/sphere/posts/{id}` → the post with its reaction counts (+ `reactions_made`
- *   when the request carries a token)
+ *   when the request carries a token). `post_media` and `post_single_media`
+ *   carry attachments (several / one) for the media grid.
+ * - `/drive/files/{id}/info` → metadata for a fixture file (the attachments
+ *   and avatar pictures), so `sk-media file="…"` renders without a post.
  * - reactions POST/DELETE mutate the per-post reaction store, logout → 2xx
  * - anything else → 404
  *
  * Every request is recorded in `stubState.requests` (plus counters), which
  * the play tests assert against. `resetStub()` clears state between stories.
+ *
+ * Live mode (`setLiveApi(true)`, wired to the "API" toolbar in
+ * `.storybook/preview.ts` and to `parameters.liveApi`) forwards every request
+ * to the real `https://api.solian.app` instead of serving fixtures, so a story
+ * can point an element at a real post. Requests are not recorded in that mode.
  */
 
 import { OIDC_MESSAGE_TYPE } from "../src/session";
@@ -41,6 +49,17 @@ const BOB_AVATAR =
       '<text x="32" y="42" font-family="sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle">B</text>' +
       "</svg>",
   );
+
+/** Bob's picture: an inline SVG `url`, so avatars render without a drive hop. */
+const BOB_PICTURE = {
+  id: "f_bob",
+  name: "bob.svg",
+  url: BOB_AVATAR,
+  mime_type: "image/svg+xml",
+  has_compression: false,
+  has_thumbnail: true,
+  file_meta: {},
+};
 
 function makePost(
   id: string,
@@ -88,6 +107,109 @@ function makePost(
   };
 }
 
+/** Second inline SVG so media fixtures render without network access. */
+const SHOT_SVG =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">' +
+      '<rect width="640" height="360" fill="#2b2140"/>' +
+      '<text x="320" y="196" font-family="sans-serif" font-size="44" fill="#ffffff" text-anchor="middle">screenshot</text>' +
+      "</svg>",
+  );
+
+/**
+ * A publisher whose avatar carries no direct URL — the shape the real API
+ * sends (`picture.url: null`, bytes at `…/drive/files/{id}`). The reply list
+ * must resolve the id, not fall back to initials.
+ */
+const CAROL_PUBLISHER = {
+  id: "p_carol",
+  name: "carol",
+  nick: "Carol",
+  bio: null,
+  picture: {
+    id: "f_carol",
+    name: "carol.png",
+    url: null,
+    mime_type: "image/png",
+    has_compression: false,
+    has_thumbnail: false,
+    // Real payloads nest the BlurHash in `file_meta`; the elements hand it to
+    // unlazy as the placeholder.
+    file_meta: { blurhash: "LKO2:N%2Tw=w]~RBVZRi};RPxuwH" },
+  },
+  background: null,
+  verification: null,
+  account: { id: "acc_carol", name: "carol", nick: "Carol", profile: null },
+  stat: null,
+  created_at: "2023-03-01T00:00:00Z",
+};
+
+/** Attachments covering every kind the media grid renders. */
+const REPLY_ATTACHMENTS = [
+  {
+    id: "a_reply_img",
+    name: "screenshot.png",
+    url: SHOT_SVG,
+    mime_type: "image/png",
+    has_compression: true,
+    has_thumbnail: true,
+    file_meta: { width: 640, height: 360 },
+  },
+  {
+    id: "a_reply_clip",
+    name: "clip.mp4",
+    url: null,
+    mime_type: "video/mp4",
+    has_compression: false,
+    has_thumbnail: true,
+    file_meta: { width: 1280, height: 720 },
+  },
+  {
+    id: "a_reply_voice",
+    name: "voice.mp3",
+    url: null,
+    mime_type: "audio/mpeg",
+    has_compression: false,
+    has_thumbnail: false,
+    file_meta: {},
+  },
+  {
+    id: "a_reply_spec",
+    name: "spec.pdf",
+    url: null,
+    mime_type: "application/pdf",
+    has_compression: false,
+    has_thumbnail: false,
+    file_meta: {},
+  },
+];
+
+/** A lone attachment, for the grid's single-attachment layout. */
+const SINGLE_ATTACHMENT = [
+  {
+    id: "a_single_img",
+    name: "diagram.png",
+    url: null,
+    mime_type: "image/png",
+    has_compression: true,
+    has_thumbnail: true,
+    file_meta: { width: 800, height: 450, blurhash: "LKO2:N%2Tw=w]~RBVZRi};RPxuwH" },
+  },
+];
+
+/**
+ * Files the stub can describe by id (`GET /drive/files/{id}/info`), so
+ * `sk-media file="…"` renders offline: the attachment fixtures plus the avatar
+ * pictures the replies/composer stories use.
+ */
+const FILE_FIXTURES: Record<string, unknown>[] = [
+  ...SINGLE_ATTACHMENT,
+  ...REPLY_ATTACHMENTS,
+  BOB_PICTURE,
+  CAROL_PUBLISHER.picture,
+];
+
 export const REPLIES: WireReply[] = [
   {
     post: makePost("r1", {
@@ -95,6 +217,9 @@ export const REPLIES: WireReply[] = [
         "Good question! See the **migration guide** at [docs](https://docs.solian.app).\n\nShort answer: it works on any host.",
       boost_count: 2,
       replies_count: 2,
+      // Auto-tagging creates slug-only tags: the wire sends `name: null`, and
+      // the stubbed client validates this reply against the real schema.
+      tags: [{ id: "t_video", slug: "视频", name: null }],
     }),
     depth: 0,
     parent_id: null,
@@ -110,15 +235,7 @@ export const REPLIES: WireReply[] = [
         name: "bob",
         nick: "Bob",
         bio: null,
-        picture: {
-          id: "f_bob",
-          name: "bob.svg",
-          url: BOB_AVATAR,
-          mime_type: "image/svg+xml",
-          has_compression: false,
-          has_thumbnail: true,
-          file_meta: {},
-        },
+        picture: BOB_PICTURE,
         background: null,
         verification: null,
         account: { id: "acc_bob", name: "bob", nick: "Bob", profile: null },
@@ -133,6 +250,8 @@ export const REPLIES: WireReply[] = [
     post: makePost("r3", {
       content: "Seconded — ship it.",
       published_at: minutesAgo(2880),
+      publisher: CAROL_PUBLISHER,
+      attachments: SINGLE_ATTACHMENT,
     }),
     depth: 1,
     parent_id: "r1",
@@ -148,32 +267,14 @@ export const REPLIES: WireReply[] = [
         name: "bob",
         nick: "Bob",
         bio: null,
-        picture: {
-          id: "f_bob",
-          name: "bob.svg",
-          url: BOB_AVATAR,
-          mime_type: "image/svg+xml",
-          has_compression: false,
-          has_thumbnail: true,
-          file_meta: {},
-        },
+        picture: BOB_PICTURE,
         background: null,
         verification: null,
         account: { id: "acc_bob", name: "bob", nick: "Bob", profile: null },
         stat: null,
         created_at: "2023-02-01T00:00:00Z",
       },
-      attachments: [
-        {
-          id: "a1",
-          name: "screenshot.png",
-          url: "https://img.example/a1.png",
-          mime_type: "image/png",
-          has_compression: false,
-          has_thumbnail: true,
-          file_meta: {},
-        },
-      ],
+      attachments: REPLY_ATTACHMENTS,
     }),
     depth: 2,
     parent_id: "r2",
@@ -227,6 +328,12 @@ export interface StubState {
   failReactions: boolean;
   /** When true, the account has 10 publishers (long dropdown). */
   manyPublishers: boolean;
+  /**
+   * When true, requests are forwarded to the real API instead of served from
+   * fixtures. Not reset by `resetStub()`: it is a viewer mode owned by the
+   * preview decorator, not fixture state.
+   */
+  liveApi: boolean;
 }
 
 /** Per-post reactions on the wire (`symbol → count`), mutated by the stub. */
@@ -263,6 +370,7 @@ export const stubState: StubState = {
   reactionAttempts: 0,
   failReactions: false,
   manyPublishers: false,
+  liveApi: false,
 };
 
 seedReactions();
@@ -416,8 +524,21 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
   });
 }
 
+/**
+ * Toggle live mode: while true, the stub forwards requests to the real network
+ * (i.e. `https://api.solian.app`) so stories can render real data.
+ */
+export function setLiveApi(on: boolean): void {
+  stubState.liveApi = on;
+}
+
+/** The pre-stub fetch that live mode forwards to. */
+let realFetch: typeof fetch | null = null;
+
 /** Replace global fetch with the stub. Safe to call multiple times. */
 export function installApiStub(): void {
+  if (realFetch) return;
+  realFetch = globalThis.fetch.bind(globalThis);
   globalThis.fetch = async (input, init) => {
     const raw =
       input instanceof Request
@@ -425,6 +546,8 @@ export function installApiStub(): void {
         : typeof input === "string"
           ? input
           : input.href;
+    // Live mode: hand the request to the real network untouched.
+    if (stubState.liveApi && realFetch) return realFetch(input, init);
     const url = new URL(raw, "http://storybook.local");
     const method = (init?.method ?? "GET").toUpperCase();
     // Headers arrive as a plain object with the client's own casing — look up
@@ -645,6 +768,24 @@ export function installApiStub(): void {
         else delete counts[symbol];
       }
       return new Response(null, { status: 204 });
+    }
+
+    // ── Drive files: metadata by id (used by `sk-media file="…"`) ─────────
+    const fileInfoMatch = url.pathname.match(/^\/drive\/files\/([^/]+)\/info$/);
+    if (fileInfoMatch && method === "GET") {
+      record();
+      const fileId = decodeURIComponent(fileInfoMatch[1] ?? "");
+      const file = FILE_FIXTURES.find((candidate) => candidate["id"] === fileId);
+      // Only fixture ids are served offline; a real drive id needs live mode
+      // (the API toolbar), so say so instead of a bare "not found".
+      return file
+        ? json(file)
+        : json(
+            {
+              message: `Unknown fixture file id "${fileId}" — set the API toolbar to Live (or use a fixture id) to fetch real files.`,
+            },
+            404,
+          );
     }
 
     // ── Threaded replies (existing behavior + created replies) ───────────

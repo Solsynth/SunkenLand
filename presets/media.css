@@ -1,0 +1,289 @@
+/**
+ * SunkenLand preset stylesheet for `sk-media` (one file) and
+ * `sk-media-collection` (a list) — and for the attachments a reply renders
+ * through the same grid (`presets/replies-list.css` imports this file, so reply
+ * media is styled no matter which presets a host configures).
+ *
+ * Replicates FloatLand's attachment surface (`AttachmentGrid.vue` +
+ * `AttachmentItem.vue`): one file fills a box at its aspect ratio, several
+ * become a snapping horizontal list with a counter and arrows.
+ *
+ * Load it with the elements' `css` attribute:
+ *
+ *   <sk-media file="…" css="https://cdn…/presets/media.css"></sk-media>
+ *   <sk-media-collection files="…, …" css="https://cdn…/presets/media.css"></sk-media-collection>
+ *
+ * The stylesheet is injected into the element's shadow root as a <link>, so it
+ * only applies to this element. Override the `--sk-*` custom properties on the
+ * element from your own CSS to theme it.
+ *
+ * `:host` rules are scoped to the family marker class (`:host(.sk-media)`,
+ * which both elements set on their host) so configuring every preset at once
+ * cannot leak these elements' surface onto the others. The component rules
+ * below are deliberately unscoped: they only ever match `.sk-media-grid` /
+ * `.sk-media__*` markup, which is what lets `presets/replies-list.css` import
+ * this file. Inside a reply list the `--sk-*` tokens come from that element's
+ * host.
+ */
+
+:host(.sk-media) {
+  --sk-font: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sk-base-100: oklch(100% 0 0);
+  --sk-base-200: oklch(98% 0 0);
+  --sk-base-300: oklch(95% 0 0);
+  --sk-base-content: oklch(21% 0.006 285.885);
+  --sk-primary: oklch(62% 0.0873 281deg);
+  --sk-primary-content: oklch(93% 0.034 272.788);
+  --sk-radius: 0.625rem;
+  --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+
+  display: block;
+  box-sizing: border-box;
+  font-family: var(--sk-font);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--sk-base-content);
+  background: var(--sk-base-100);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host(.sk-media) {
+    --sk-base-100: oklch(0% 0 0);
+    --sk-base-200: oklch(20% 0.016 285.938);
+    --sk-base-300: oklch(25% 0.013 285.805);
+    --sk-base-content: oklch(97.807% 0.029 256.847);
+    --sk-primary: oklch(50% 0.0873 281deg);
+    --sk-primary-content: oklch(96% 0.018 272.314);
+    --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+    color-scheme: dark;
+  }
+}
+
+/* States shared with the other elements (kept here so `sk-media` stands alone
+   with just this stylesheet; bytes are identical to the reply list's copy). */
+.sk-state {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+}
+
+.sk-state--error {
+  color: var(--sk-primary);
+}
+
+.sk-media-grid {
+  display: block;
+}
+
+/* ── Single attachment ──────────────────────────────────────────────────── */
+
+.sk-media__single {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--sk-radius);
+  background: var(--sk-base-300);
+  cursor: pointer;
+}
+
+.sk-media-grid[data-flush="true"] .sk-media__single {
+  border-radius: 0;
+}
+
+/* Full-bleed: a blurred cover copy fills the letterbox bands behind the
+   contained media, like the Solian app. */
+.sk-media__backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.sk-media__backdrop .sk-media__img {
+  transform: scale(1.1);
+  filter: blur(24px);
+}
+
+.sk-media__layer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Media kinds ────────────────────────────────────────────────────────── */
+
+.sk-media__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sk-media__img[data-fit="contain"] {
+  object-fit: contain;
+}
+
+.sk-media__video {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.sk-media__video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sk-media__video[data-fit="contain"] video {
+  object-fit: contain;
+}
+
+.sk-media__play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.2);
+  color: #fff;
+  transition: background-color 150ms ease;
+}
+
+.sk-media__video:hover .sk-media__play {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.sk-media__audio,
+.sk-media__file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 100%;
+  padding: 0.75rem;
+  background: var(--sk-base-200);
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+}
+
+.sk-media__audio audio {
+  width: 100%;
+}
+
+.sk-media__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The video/audio/file chip sits over the media; the audio/file layouts are
+   column stacks and need no overlay. */
+.sk-media__video .sk-media__name {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--sk-radius);
+  background: rgb(0 0 0 / 0.4);
+  color: rgb(255 255 255 / 0.8);
+  transform: translateX(-50%);
+}
+
+/* ── Multiple attachments ───────────────────────────────────────────────── */
+
+.sk-media__strip {
+  position: relative;
+}
+
+.sk-media__scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.sk-media__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.sk-media__item {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border-radius: var(--sk-radius);
+  background: var(--sk-base-300);
+  cursor: pointer;
+}
+
+.sk-media__counter {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--sk-radius);
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sk-media__arrow {
+  position: absolute;
+  top: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 9999px;
+  background: rgb(0 0 0 / 0.5);
+  color: #fff;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background-color 150ms ease;
+}
+
+.sk-media__arrow:hover {
+  background: rgb(0 0 0 / 0.7);
+}
+
+.sk-media__arrow--prev {
+  left: 0.5rem;
+}
+
+.sk-media__arrow--next {
+  right: 0.5rem;
+}
+
+.sk-media__strip:hover .sk-media__arrow {
+  display: flex;
+}
+
+.sk-media__more {
+  display: block;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--sk-primary);
+  cursor: pointer;
+}
+
+.sk-media__more:hover {
+  text-decoration: underline;
+}

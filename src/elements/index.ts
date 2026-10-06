@@ -10,16 +10,49 @@ import { defineRepliesList } from "./replies-list";
 import { defineLogin } from "./login";
 import { defineReactionList } from "./reaction-list";
 import { defineReplyComposer } from "./reply-composer";
+import { defineMedia, defineMediaCollection } from "./media";
 
 defineRepliesList();
 defineLogin();
 defineReactionList();
 defineReplyComposer();
+defineMedia();
+defineMediaCollection();
 
 export { RepliesListElement, defineRepliesList } from "./replies-list";
 export { LoginElement, defineLogin } from "./login";
 export { ReactionListElement, defineReactionList } from "./reaction-list";
 export { ReplyComposerElement, defineReplyComposer } from "./reply-composer";
+export {
+  MediaFileElement,
+  MediaCollectionElement,
+  defineMedia,
+  defineMediaCollection,
+} from "./media";
+
+// Drive-file helpers: the API sends `url: null` and serves files from
+// `…/drive/files/{id}`, so hosts rendering the same files need the same URL
+// shape (`getFileUrl`), plus the media-kind detection and the unlazy
+// placeholder inputs (`getBlurhash` / `getImageSize`) the elements use.
+export {
+  getFileUrl,
+  getFileKind,
+  getAspectRatio,
+  getBlurhash,
+  getImageSize,
+} from "../utils/files";
+export type { FileLike, FileKind, HashLike } from "../utils/files";
+
+// Identity/time formatting shared with the elements (avatar resolution
+// included: `getAvatarUrl` falls back to the drive file id).
+export {
+  getAvatarFile,
+  getAvatarUrl,
+  getDisplayName,
+  getInitials,
+  formatRelativeTime,
+} from "../utils/format";
+export type { PublisherLike, PictureLike } from "../utils/format";
 
 // Library-wide configuration: stylesheet presets, API origin, auth hooks,
 // session override.

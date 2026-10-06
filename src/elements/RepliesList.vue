@@ -19,6 +19,9 @@ import {
   getInitials,
 } from "../utils/format";
 import { getHostElement, markHost } from "../utils/host";
+import type { FileLike } from "../utils/files";
+import AvatarImage from "./AvatarImage.vue";
+import MediaGrid from "./MediaGrid.vue";
 
 /**
  * Threaded reply list for a parent post.
@@ -51,6 +54,9 @@ import { getHostElement, markHost } from "../utils/host";
  * Events (dispatched on the host element; they bubble and are composed so they
  * cross the shadow boundary):
  * - `reply-click` with `detail = { postId, post }`
+ * - `media-click` with `detail = { postId, post, index, file, url }` when an
+ *   attachment is clicked. Cancelable; nothing opens by default — the host
+ *   decides (see `sk-media` for the same event with a default action).
  *
  * Slots (light-DOM children, projected into the shadow root — work from any
  * host, no Vue required):
@@ -68,6 +74,11 @@ import { getHostElement, markHost } from "../utils/host";
  * external styling: `header`, `count`, `list`, `reply`, `avatar`, `body`,
  * `meta`, `author`, `handle`, `time`, `content`, `attachments`, `stats`,
  * `state`, `error`, `empty`, `load-more`, `view-all`.
+ *
+ * A reply's attachments render through the shared media grid (the same markup
+ * `sk-media-collection` uses), so its parts are available here too: `media`,
+ * `single`, `backdrop`, `item`, `image`, `video`, `play`, `audio`, `file`,
+ * `icon`, `name`, `counter`, `scroll`, `arrow-prev`, `arrow-next`, `more`.
  *
  *   sk-replies-list::part(reply) { border-left: 2px solid currentColor; }
  */
@@ -185,6 +196,26 @@ function onReplyClick(post: SnPost): void {
   );
 }
 
+/**
+ * Re-dispatch an attachment click as `media-click` (cancelable) on the host,
+ * with the reply's post attached. The list has no viewer of its own — like
+ * `reply-click`, the host decides what happens next (and the click never
+ * reaches the row, so `reply-click` does not also fire).
+ */
+function onMediaClick(
+  post: SnPost,
+  payload: { index: number; file: FileLike; url: string },
+): void {
+  rootEl.value?.dispatchEvent(
+    new CustomEvent("media-click", {
+      detail: { postId: post.id, post, ...payload },
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    }),
+  );
+}
+
 // Mirror the error message onto the host element so hosts overriding the
 // `error` slot can still read it (e.g. to render their own state). `flush:
 // "post"` ensures the first (synchronous) error lands after the shadow tree
@@ -248,12 +279,12 @@ watch(
         :aria-level="node.depth + 1"
         @click="onReplyClick(node.post)"
       >
-        <span v-if="getAvatarUrl(node.post.publisher)" class="sk-reply__avatar" part="avatar">
-          <img
-            :src="getAvatarUrl(node.post.publisher)"
-            :alt="getDisplayName(node.post.publisher)"
-            loading="lazy"
-          />
+        <span
+          v-if="getAvatarUrl(node.post.publisher, client.baseUrl)"
+          class="sk-reply__avatar"
+          part="avatar"
+        >
+          <AvatarImage :publisher="node.post.publisher" :base-url="client.baseUrl" />
         </span>
         <span
           v-else
@@ -290,8 +321,11 @@ watch(
             class="sk-reply__attachments"
             part="attachments"
           >
-            {{ node.post.attachments.length }}
-            {{ node.post.attachments.length === 1 ? "attachment" : "attachments" }}
+            <MediaGrid
+              :attachments="node.post.attachments"
+              :base-url="client.baseUrl"
+              @media-click="(payload) => onMediaClick(node.post, payload)"
+            />
           </div>
 
           <div v-if="node.post.repliesCount > 0 || node.post.boostCount > 0" class="sk-reply__stats" part="stats">

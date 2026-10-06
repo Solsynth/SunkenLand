@@ -17,7 +17,13 @@
  * which the component sets on the host), so configuring several presets at once
  * — the documented setup — cannot leak this element's surface (borders,
  * background, `overflow`) onto the others.
+ *
+ * Replies render their attachments through the shared media grid, so this
+ * preset pulls in `media.css` (shipped alongside it): the grid's rules only
+ * match `.sk-media*` markup, and the `--sk-*` tokens below theme it.
  */
+
+@import "./media.css";
 
 :host(.sk-replies) {
   --sk-font: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -228,7 +234,10 @@
   line-height: 1.25;
 }
 
-.sk-reply__attachments,
+.sk-reply__attachments {
+  margin-top: 0.375rem;
+}
+
 .sk-reply__stats {
   display: flex;
   gap: 0.75rem;

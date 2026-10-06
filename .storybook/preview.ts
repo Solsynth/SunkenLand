@@ -1,11 +1,12 @@
 import type { Preview } from "@storybook/web-components-vite";
 
 import { configure } from "../src/config";
-import { installApiStub } from "./fixtures";
+import { installApiStub, setLiveApi } from "./fixtures";
 import { defineRepliesList } from "../src/elements/replies-list";
 import { defineLogin } from "../src/elements/login";
 import { defineReactionList } from "../src/elements/reaction-list";
 import { defineReplyComposer } from "../src/elements/reply-composer";
+import { defineMedia, defineMediaCollection } from "../src/elements/media";
 
 // Elements fetch `https://api.solian.app` — stub it so stories run anywhere.
 installApiStub();
@@ -19,20 +20,58 @@ configure({
   stickerUrl: "/stickers/{symbol}.webp",
   css: [
     "/presets/replies-list.css",
+    "/presets/media.css",
     "/presets/login.css",
     "/presets/reply-composer.css",
     "/presets/reactions.css",
   ],
 });
 
-// Register the standard tags and one custom-tag demo used by a story.
+// Register the standard tags and the custom-tag demos used by stories.
 defineRepliesList();
 defineRepliesList("sk-demo-replies");
 defineLogin();
 defineReactionList();
 defineReplyComposer();
+defineMedia();
+defineMedia("sk-demo-media");
+defineMediaCollection();
+defineMediaCollection("sk-demo-media-collection");
+
+/**
+ * Toolbar switch for where elements read from. `Stubbed` (the default) serves
+ * deterministic fixtures so play tests run offline; `Live` forwards to
+ * `https://api.solian.app`, letting a story render real data — e.g. edit
+ * `sk-replies-list`'s `post` to a real post id.
+ */
+export const globalTypes = {
+  liveApi: {
+    description: "API the elements read from.",
+    toolbar: {
+      title: "API",
+      icon: "globe",
+      items: [
+        { value: "stub", title: "Stubbed" },
+        { value: "live", title: "Live (api.solian.app)" },
+      ],
+      dynamicTitle: true,
+    },
+  },
+};
+
+export const initialGlobals = { liveApi: "stub" };
 
 const preview: Preview = {
+  // A story opts into the live API either with the toolbar above or with
+  // `parameters: { liveApi: true }` (useful for a dedicated live story).
+  decorators: [
+    (story, context) => {
+      setLiveApi(
+        context.globals.liveApi === "live" || Boolean(context.parameters.liveApi),
+      );
+      return story();
+    },
+  ],
   parameters: {
     controls: {
       matchers: {
