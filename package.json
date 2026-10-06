@@ -1,5 +1,5 @@
 {
-  "name": "@solsynth/sunken-land",
+  "name": "@solsynth/sunkenland",
   "version": "0.1.0",
   "description": "Embeddable SunkenLand web components (sk-*) with a zod-validated Stargate API client.",
   "type": "module",
@@ -96,7 +96,6 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
     "access": "public"
   },
   "overrides": {
