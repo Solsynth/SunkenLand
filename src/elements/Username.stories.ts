@@ -181,7 +181,13 @@ export const Default: Story = {
 
     await step("the marks center on the name's line box, not the text baseline", async () => {
       const row = sr.querySelector<HTMLElement>(".sk-username");
-      await expect(getComputedStyle(row as Element).display).toBe("flex");
+      // The preset must have made the shadow row a flex row; wait for the
+      // stylesheet to land before measuring (vitest may still be loading it).
+      await waitFor(() =>
+        expect(["flex", "inline-flex"]).toContain(
+          getComputedStyle(row as Element).display,
+        ),
+      );
       const centerY = (el: Element | null): number => {
         const box = el?.getBoundingClientRect();
         return box ? (box.top + box.bottom) / 2 : Number.NaN;

@@ -3,13 +3,19 @@ import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import {
   ApiClient,
   API_BASE_URL,
-  camelToSnakeStr,
   PostsApi,
   type SnPost,
 } from "../api";
 import { getConfig, onConfigChange, toStylesheetList } from "../config";
 import { getSession, type SessionState } from "../session";
 import { getHostElement, markHost } from "../utils/host";
+import {
+  AVAILABLE_REACTIONS,
+  buildReactionChips,
+  normalizeReactionSymbols,
+  reactionStickerSrc,
+  type AvailableReaction,
+} from "../utils/reactions";
 
 /**
  * Reaction bar for a post — the embeddable port of FloatLand's
@@ -64,55 +70,6 @@ import { getHostElement, markHost } from "../utils/host";
  *
  *   sk-reaction-list::part(chip) { border-radius: 9999px; }
  */
-
-interface AvailableReaction {
-  symbol: string;
-  emoji: string;
-  label: string;
-  attitude: number;
-}
-
-/** FloatLand's reaction set ("positive" 0, "neutral" 1, "negative" 2). */
-const AVAILABLE_REACTIONS: AvailableReaction[] = [
-  { symbol: "thumb_up", emoji: "👍", label: "Like", attitude: 0 },
-  { symbol: "heart", emoji: "❤️", label: "Love", attitude: 0 },
-  { symbol: "clap", emoji: "👏", label: "Clap", attitude: 0 },
-  { symbol: "laugh", emoji: "😂", label: "Laugh", attitude: 0 },
-  { symbol: "party", emoji: "🎉", label: "Party", attitude: 0 },
-  { symbol: "salute", emoji: "🫡", label: "Salute", attitude: 0 },
-  { symbol: "pray", emoji: "🙏", label: "Pray", attitude: 1 },
-  { symbol: "hello", emoji: "👋", label: "Hello", attitude: 1 },
-  { symbol: "shock", emoji: "😱", label: "Shock", attitude: 1 },
-  { symbol: "confuse", emoji: "🧐", label: "Confused", attitude: 1 },
-  { symbol: "cry", emoji: "😭", label: "Cry", attitude: 1 },
-  { symbol: "speechless", emoji: "😶", label: "Speechless", attitude: 1 },
-  { symbol: "ridicule", emoji: "😏", label: "Ridicule", attitude: 1 },
-  { symbol: "angry", emoji: "😡", label: "Angry", attitude: 2 },
-  { symbol: "thumb_down", emoji: "👎", label: "Dislike", attitude: 2 },
-];
-
-const REACTIONS_BY_SYMBOL = new Map(
-  AVAILABLE_REACTIONS.map((reaction) => [reaction.symbol, reaction]),
-);
-
-/**
- * Reaction symbols arrive camelCased from some endpoints (`thumbUp`), and the
- * client's response conversion camelCases the keys of the `reactionsCount` /
- * `reactionsMade` maps on top of that. Everything inside the element works
- * with the canonical `thumb_up` form — which is also what the API expects on
- * the wire when reacting or removing.
- */
-function normalizeSymbol(symbol: string): string {
-  return camelToSnakeStr(symbol).toLowerCase();
-}
-
-function normalizeSymbols<T>(map: Record<string, T>): Record<string, T> {
-  const out: Record<string, T> = {};
-  for (const [symbol, value] of Object.entries(map)) {
-    out[normalizeSymbol(symbol)] = value;
-  }
-  return out;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -205,19 +162,7 @@ const error = ref<string | null>(null);
 const menuOpen = ref(false);
 const showAll = ref(false);
 
-const chips = computed(() =>
-  Object.entries(counts.value).map(([symbol, count]) => {
-    const known = REACTIONS_BY_SYMBOL.get(normalizeSymbol(symbol));
-    return {
-      symbol,
-      count,
-      reacted: Boolean(mine.value[symbol]),
-      label: known?.label ?? symbol,
-      emoji: known?.emoji ?? "❓",
-      attitude: known?.attitude ?? 0,
-    };
-  }),
-);
+const chips = computed(() => buildReactionChips(counts.value, mine.value));
 
 const visibleChips = computed(() =>
   showAll.value ? chips.value : chips.value.slice(0, props.maxVisible),
@@ -225,9 +170,7 @@ const visibleChips = computed(() =>
 const hasMore = computed(() => chips.value.length > props.maxVisible);
 
 function stickerSrc(symbol: string): string | undefined {
-  const template = stickerTemplate.value;
-  if (!template) return undefined;
-  return template.replace(/\{symbol\}/g, normalizeSymbol(symbol));
+  return reactionStickerSrc(stickerTemplate.value, symbol);
 }
 
 function isMine(symbol: string): boolean {
@@ -361,8 +304,8 @@ async function load(): Promise<void> {
     const post: SnPost = await posts.fetchPost(props.post);
     // Superseded by a newer load, or a reaction changed locally meanwhile.
     if (seq !== loadSeq || revision !== revisions) return;
-    counts.value = normalizeSymbols(post.reactionsCount);
-    mine.value = normalizeSymbols(post.reactionsMade ?? {});
+    counts.value = normalizeReactionSymbols(post.reactionsCount);
+    mine.value = normalizeReactionSymbols(post.reactionsMade ?? {});
     loaded.value = true;
     error.value = null;
   } catch (err) {

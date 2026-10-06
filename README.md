@@ -89,6 +89,8 @@ Server routes can use the package's API layer directly — `import { createApiCl
 
 <sk-username account="8792577d-407a-44f7-9720-8bad7efdc7a2"></sk-username>
 
+<sk-post post="01a11173-2a88-72a4-87cb-546aaddb046d"></sk-post>
+
 <sk-login></sk-login>
 ```
 
@@ -103,6 +105,7 @@ SunkenLand.configure({
     "/presets/reply-composer.css",
     "/presets/reactions.css",
     "/presets/username.css",
+    "/presets/post.css",
   ],
   // Reaction stickers. The set ships in `dist/stickers/` (copied from
   // FloatLand's sticker set) — point this at your CDN, or omit it for emoji.
@@ -264,6 +267,58 @@ The colour rules are exported for hosts that render names themselves —
 `USERNAME_PLAIN_COLORS`, `USERNAME_TIER_COLORS`,
 `USERNAME_VERIFICATION_COLORS` — and accept either a profile-shaped object or a
 top-level `usernameColor`.
+
+### `sk-post`
+
+A whole post — the embeddable port of FloatLand's `PostCard.vue`: the author
+header (avatar and the colourful name, handle, time), the replied/forwarded
+reference preview, an article's title/description, the Markdown body,
+attachments through the [`sk-media-collection`](#sk-media-collection) grid, tags
+with a `+N` chip, metadata (edited, visibility, views), the reaction summary,
+and the stats footer.
+
+The body renders through the package's dependency-free Markdown renderer: HTML
+is escaped and link targets are limited to `http(s)`/`mailto` — the same posture
+as FloatLand's `html: false` markdown-it. An `isTruncated` post keeps the API's
+truncation marker.
+
+What to render comes from, in order of precedence:
+
+1. `post` **property** — a parsed `SnPost` object (`el.post = post`), no
+   request;
+2. `post` **attribute** — a post id, resolved through
+   `GET /sphere/posts/{post}` (a public read; a session adds `reactionsMade`, so
+   the visitor's own reactions are highlighted).
+
+- Attributes: `post` (required), `detail` (full-post presentation — no body
+  truncation, views shown, all tags), `variant` (`card` default | `feed`),
+  `reference` (`reference="false"` hides the preview), `media`
+  (`media="false"` hides the attachments), `reactions` (`summary` default |
+  `off`), `max-tags` (tags before the `+N` chip, default 3), `max-chips`
+  (reaction chips before the `+N` chip, default 5), `sticker-url` (overrides
+  `configure({ stickerUrl })`; `sticker-url=""` falls back to emoji), `url`,
+  `publisher-url` (template with `{name}`/`{id}`), `tag-url` (template with
+  `{slug}`/`{id}`), `css`, `base-url`
+- Properties: `post` (`string | SnPost`)
+- Events: `post-click` (`detail = { postId, post, target, href }`, `target` ∈
+  `post`/`publisher`/`tag`) and `media-click` (`detail = { postId, post, index,
+  file, url }`). `post-click` is cancelable; unless the host calls
+  `preventDefault()`, the default action opens `href` in a new tab.
+- Slots: `content` (replaces the rendered body, receives `post`), `reference`,
+  `actions`, `loading`, `error`
+- Parts: `header`, `avatar`, `publisher`, `handle`, `time`,
+  `verification`, `membership`, `reference`, `reference-toggle`,
+  `reference-body`, `reference-publisher`, `reference-content`,
+  `reference-attachments`, `title`, `description`, `body`, `content`,
+  `thumbnail`, `media`, `tags`, `tag`, `tag-more`, `meta`, `edited`,
+  `visibility`, `views`, `reactions`, `reaction-chip`, `reaction-more`,
+  `reaction-count`, `stats`, `replies`, `reaction-total`, `footer`, `actions`,
+  `link`, `state`, `error`
+
+The app-only actions — the overflow menu (edit/delete/report/share), boosting,
+and opening the composer — are deliberately out of scope. Pair the element with
+`sk-reaction-list` and `sk-reply-composer` for those, or build them on
+`post-click`.
 
 ### `sk-login`
 
@@ -450,10 +505,10 @@ at once, so each preset scopes its rules to a marker class the component sets on
 its host (`sk-replies-list.sk-replies`, `sk-login.sk-login`,
 `sk-reply-composer.sk-composer`, `sk-reaction-list.sk-reactions`,
 `sk-media.sk-media`, `sk-media-collection.sk-media` — the two media elements
-share one family marker because they share one preset — and
-`sk-username.sk-username`). That keeps one preset from styling — or clipping,
-via `overflow` — another element. The marker also survives custom tag names
-(`defineReactionList("my-reactions")`).
+share one family marker because they share one preset — plus
+`sk-username.sk-username` and `sk-post.sk-post`). That keeps one preset from
+styling — or clipping, via `overflow` — another element. The marker also
+survives custom tag names (`defineReactionList("my-reactions")`).
 
 `presets/replies-list.css` imports `presets/media.css` (both ship in
 `dist/presets/`), because reply attachments render through the media grid: the
@@ -514,7 +569,14 @@ Parts — `sk-login`: `guest`, `error`, `button`, `logo`, `label`, `user`,
 `arrow-prev`, `arrow-next`, `more`, `state`, `error`, `empty` — and the reply
 list exposes those same media parts for its replies' attachments.
 `sk-username`: `name`, `verification`, `membership`, `bot`, `suffix`, `state`,
-`error`.
+`error`. `sk-post`: the whole list — see [`sk-post`](#sk-post) — `header`,
+`avatar`, `publisher`, `handle`, `time`, `verification`,
+`membership`, `reference`, `reference-toggle`, `reference-body`,
+`reference-publisher`, `reference-content`, `reference-attachments`, `title`,
+`description`, `body`, `content`, `thumbnail`, `media`, `tags`, `tag`,
+`tag-more`, `meta`, `edited`, `visibility`, `views`, `reactions`,
+`reaction-chip`, `reaction-more`, `reaction-count`, `stats`, `replies`,
+`reaction-total`, `footer`, `actions`, `link`, `state`, `error`.
 
 Button text and icon are attributes too — `label="Continue with Solar"`,
 `icon="/acme-mark.svg"`, or `icon=""` to drop the mark.
@@ -619,6 +681,7 @@ the host element.
 - `presets/reply-composer.css`
 - `presets/reactions.css`
 - `presets/username.css`
+- `presets/post.css` (imports `media.css` for the attachments)
 
 ## Publishing
 

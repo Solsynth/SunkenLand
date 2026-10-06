@@ -219,7 +219,7 @@ export function usernameColorStyle(
   ignorePermissions = false,
 ): Record<string, string> {
   const tier = getUsernameTier(source);
-  const custom = source?.usernameColor;
+  const custom = colorOf(source);
 
   if (custom) {
     // Present but not allowed: no colour (FloatLand does not downgrade to the

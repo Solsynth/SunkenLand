@@ -29,7 +29,7 @@
  * can point an element at a real post. Requests are not recorded in that mode.
  */
 
-import { snakeToCamel } from "../src/api";
+import { snakeToCamel, type SnPost } from "../src/api";
 import { OIDC_MESSAGE_TYPE } from "../src/session";
 import type { UsernameData } from "../src/utils/username";
 
@@ -613,6 +613,94 @@ export function usernameAccountFixture(key: string): UsernameData {
   return snakeToCamel(wire) as UsernameData;
 }
 
+/**
+ * Posts `sk-post` renders, served from the existing `GET /sphere/posts/{id}`
+ * route. Each covers one presentation the element has to get right: Markdown
+ * body + tags + attachments + reactions, a replied/forwarded reference, an
+ * API-truncated body, an article card, a non-public post, and the minimal case.
+ *
+ * Reaction symbols are stored snake_cased (`thumb_up`) — the wire form — so the
+ * client's key camelCasing and the element's normalization are exercised.
+ */
+const POST_FIXTURES: Record<string, Record<string, unknown>> = {
+  post_rich: {
+    visibility: 0,
+    content:
+      "# Release notes\n\nA **bold** claim with `inline code`, a [link](https://solian.app) and ~~struck~~ text.\n\n- first point\n- second point\n\n> quoted line\n\n```ts\nconst answer = 42;\n```",
+    published_at: minutesAgo(90),
+    edited_at: minutesAgo(30),
+    replies_count: 12,
+    views_total: 3456,
+    boost_count: 3,
+    // Four tags so the default `max-tags="3"` exercises the "+N" chip.
+    tags: [
+      { id: "t_solar", slug: "solar", name: "Solar" },
+      { id: "t_dev", slug: "dev", name: "Dev" },
+      { id: "t_art", slug: "art", name: null },
+      { id: "t_misc", slug: "misc", name: "Misc" },
+    ],
+    attachments: REPLY_ATTACHMENTS.slice(0, 2),
+    reactions_count: { thumb_up: 4, heart: 2, party: 1 },
+  },
+  post_reference: {
+    visibility: 0,
+    content: "Replying to the announcement above with one more detail.",
+    replied_post: makePost("post_parent", {
+      content: "The announcement body, quoted by the reply.",
+      replies_count: 3,
+    }),
+  },
+  post_forwarded: {
+    visibility: 0,
+    content: "Worth a read.",
+    forwarded_post: makePost("post_forwarded_source", {
+      content: "The original post being forwarded.",
+    }),
+  },
+  post_truncated: {
+    visibility: 0,
+    content: "A long body the API cut short",
+    is_truncated: true,
+  },
+  post_article: {
+    visibility: 0,
+    type: 1,
+    title: "A long-form article",
+    description: "What the article is about, in one line.",
+    content: "# Section one\n\nArticle body.",
+    // Two attachments with the *second* one chosen as the thumbnail, so the
+    // `meta.thumbnail` pick (not simply the first attachment) is what renders.
+    attachments: [REPLY_ATTACHMENTS[1], REPLY_ATTACHMENTS[0]],
+    meta: { thumbnail: "a_reply_img" },
+  },
+  post_private: {
+    content: "Visible to friends only.",
+    visibility: 3,
+    reactions_count: {},
+  },
+  post_plain: {
+    visibility: 0,
+    content: "Just a sentence.",
+    reactions_count: {},
+  },
+  post_empty: {
+    visibility: 0,
+    content: "",
+    reactions_count: {},
+  },
+};
+
+/**
+ * A post as a host would hold it (camelCase, the parsed shape), for the
+ * `post` property path — no request, which the stories assert.
+ */
+export function postFixture(key: string): SnPost {
+  const overrides = POST_FIXTURES[key] ?? {};
+  // The stub stores wire payloads; the elements consume the camelCase form the
+  // API client produces, so convert once here.
+  return snakeToCamel(makePost(key, overrides)) as SnPost;
+}
+
 const SECOND_PUBLISHER_WIRE = {
   id: "p_me_alt",
   name: "me-alt",
@@ -883,13 +971,29 @@ export function installApiStub(): void {
       record();
       const postId = decodeURIComponent(postMatch[1] ?? "");
       const reacted = myReactions[postId];
+      // Like the real API: `reactions_made` only for authenticated reads.
+      const made = auth && reacted
+        ? Object.fromEntries([...reacted].map((symbol) => [symbol, true]))
+        : null;
+      const fixture = POST_FIXTURES[postId];
+      if (fixture) {
+        const { reactions_count: fixtureCounts, ...rest } = fixture;
+        return json(
+          makePost(postId, {
+            ...rest,
+            // A story's own reactions stay authoritative over the fixture's.
+            reactions_count: {
+              ...((fixtureCounts ?? {}) as Record<string, number>),
+              ...reactionStore[postId],
+            },
+            reactions_made: made,
+          }),
+        );
+      }
       return json(
         makePost(postId, {
           reactions_count: { ...reactionStore[postId] },
-          // Like the real API: `reactions_made` only for authenticated reads.
-          reactions_made: auth && reacted
-            ? Object.fromEntries([...reacted].map((symbol) => [symbol, true]))
-            : null,
+          reactions_made: made,
         }),
       );
     }

@@ -69,6 +69,24 @@ export function getAvatarUrl(
   return picture.url || getFileUrl(picture.id, { baseUrl });
 }
 
+/**
+ * Compact count for post stats (`1200` → `1.2K`, `1500000` → `1.5M`), mirroring
+ * FloatLand's `formatNumber`.
+ */
+export function formatCount(count: number): string {
+  if (!Number.isFinite(count)) return "0";
+  const abs = Math.abs(count);
+  if (abs >= 1_000_000) {
+    const scaled = count / 1_000_000;
+    return `${scaled.toFixed(abs >= 10_000_000 ? 0 : 1)}M`;
+  }
+  if (abs >= 1_000) {
+    const scaled = count / 1_000;
+    return `${scaled.toFixed(abs >= 10_000 ? 0 : 1)}K`;
+  }
+  return String(count);
+}
+
 /** FloatLand-style relative time: just now / Nm / Nh / Nd / Nw / date. */
 export function formatRelativeTime(
   iso: string,

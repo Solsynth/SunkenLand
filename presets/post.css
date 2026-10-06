@@ -1,0 +1,475 @@
+/**
+ * SunkenLand preset stylesheet for `sk-post` — one whole post.
+ *
+ * Replicates FloatLand's `PostCard.vue` surface: the card (or flat feed row),
+ * the author header with the colourful name, the replied/forwarded reference,
+ * title/description, the Markdown body (`prose`-style typography), the
+ * attachment grid (styled by `presets/media.css`, which this file imports so a
+ * host can load one stylesheet per post), the tag chips, the metadata row, the
+ * reaction summary, and the stats footer.
+ *
+ * Load it with the element's `css` attribute:
+ *
+ *   <sk-post post="…" css="https://cdn…/presets/post.css"></sk-post>
+ *
+ * The stylesheet is injected into the element's shadow root as a <link>, so it
+ * only applies to this element. Override the `--sk-*` tokens on the element:
+ *
+ *   Surfaces:   --sk-font, --sk-base-100, --sk-base-200, --sk-base-300,
+ *               --sk-base-content, --sk-primary, --sk-primary-content,
+ *               --sk-radius, --sk-border
+ *   Post:       --sk-post-surface, --sk-post-padding, --sk-post-gap,
+ *               --sk-post-avatar-size, --sk-post-mark-size,
+ *               --sk-post-muted, --sk-post-chip-bg, --sk-post-chip-color,
+ *               --sk-post-react-bg, --sk-post-react-color
+ *
+ *   sk-post { --sk-post-padding: 1.25rem; }
+ *
+ * `:host` rules are scoped to the element's marker class (`:host(.sk-post)`,
+ * which the component sets on the host) so configuring every preset at once
+ * cannot leak this element's surface onto the others. The component rules below
+ * are deliberately unscoped: they only ever match `.sk-post*` markup (and the
+ * `.sk-media-grid*` markup the imported media preset belongs to) — which is what
+ * lets another element import this file for its own post rows.
+ *
+ * Posts render their attachments through the shared media grid, so this preset
+ * pulls in `media.css` (shipped alongside it): the grid's rules only match
+ * `.sk-media*` markup, and the `--sk-*` tokens below theme it.
+ */
+
+@import "./media.css";
+
+:host(.sk-post) {
+  --sk-font: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sk-base-100: oklch(100% 0 0);
+  --sk-base-200: oklch(98% 0 0);
+  --sk-base-300: oklch(95% 0 0);
+  --sk-base-content: oklch(21% 0.006 285.885);
+  --sk-primary: oklch(62% 0.0873 281deg);
+  --sk-primary-content: oklch(93% 0.034 272.788);
+  --sk-radius: 0.625rem;
+  --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+  --sk-post-surface: var(--sk-base-100);
+  --sk-post-padding: 1rem;
+  --sk-post-gap: 0.625rem;
+  --sk-post-avatar-size: 2.5rem;
+  --sk-post-mark-size: 0.875rem;
+  --sk-post-muted: color-mix(in oklch, var(--sk-base-content) 55%, transparent);
+  --sk-post-chip-bg: var(--sk-base-200);
+  --sk-post-chip-color: var(--sk-base-content);
+  --sk-post-react-bg: var(--sk-base-200);
+  --sk-post-react-color: var(--sk-base-content);
+
+  display: block;
+  box-sizing: border-box;
+  font-family: var(--sk-font);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--sk-base-content);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host(.sk-post) {
+    --sk-base-100: oklch(0% 0 0);
+    --sk-base-200: oklch(20% 0.016 285.938);
+    --sk-base-300: oklch(25% 0.013 285.805);
+    --sk-base-content: oklch(97.807% 0.029 256.847);
+    --sk-primary: oklch(50% 0.0873 281deg);
+    --sk-primary-content: oklch(96% 0.018 272.314);
+    --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+    color-scheme: dark;
+  }
+}
+
+/* ── Surface ────────────────────────────────────────────────────────────── */
+
+.sk-post {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-post-gap);
+  min-width: 0;
+}
+
+.sk-post[data-variant="card"] {
+  padding: var(--sk-post-padding);
+  border: 1px solid var(--sk-border);
+  border-radius: var(--sk-radius);
+  background: var(--sk-post-surface);
+}
+
+.sk-post[data-variant="feed"] {
+  padding: 0.875rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--sk-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.sk-post__header {
+  display: grid;
+  grid-template-columns: var(--sk-post-avatar-size) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.sk-post__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  width: var(--sk-post-avatar-size);
+  height: var(--sk-post-avatar-size);
+  border-radius: 9999px;
+  background: var(--sk-base-200);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sk-post-muted);
+}
+
+.sk-post__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sk-post__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sk-post__line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.sk-post__publisher {
+  overflow: hidden;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sk-post__mark {
+  flex-shrink: 0;
+  width: var(--sk-post-mark-size);
+  height: var(--sk-post-mark-size);
+}
+
+.sk-post__sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--sk-post-muted);
+}
+
+.sk-post__handle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── Reference (replied / forwarded) ────────────────────────────────────── */
+
+.sk-post__reference {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--sk-border);
+  border-radius: calc(var(--sk-radius) - 2px);
+  background: var(--sk-base-200);
+}
+
+.sk-post__reference-toggle {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sk-primary);
+  cursor: pointer;
+}
+
+.sk-post__reference-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.sk-post__reference-publisher {
+  font-weight: 600;
+}
+
+.sk-post__reference-content {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.sk-post__reference-attachments {
+  font-size: 0.75rem;
+  color: var(--sk-post-muted);
+}
+
+/* ── Body ───────────────────────────────────────────────────────────────── */
+
+.sk-post__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.sk-post__description {
+  margin: 0;
+  color: var(--sk-post-muted);
+}
+
+.sk-post__content {
+  overflow-wrap: anywhere;
+}
+
+.sk-post__content > :first-child {
+  margin-top: 0;
+}
+
+.sk-post__content > :last-child {
+  margin-bottom: 0;
+}
+
+.sk-post__content p,
+.sk-post__content ul,
+.sk-post__content ol,
+.sk-post__content blockquote,
+.sk-post__content pre {
+  margin: 0 0 0.5rem;
+}
+
+.sk-post__content h1,
+.sk-post__content h2,
+.sk-post__content h3,
+.sk-post__content h4,
+.sk-post__content h5,
+.sk-post__content h6 {
+  margin: 0.75rem 0 0.375rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sk-post__content a {
+  color: var(--sk-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sk-post__content code {
+  padding: 0.0625rem 0.25rem;
+  border-radius: 0.25rem;
+  background: var(--sk-base-200);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125em;
+}
+
+.sk-post__content pre {
+  overflow-x: auto;
+  padding: 0.625rem 0.75rem;
+  border-radius: calc(var(--sk-radius) - 2px);
+  background: var(--sk-base-200);
+}
+
+.sk-post__content pre code {
+  padding: 0;
+  background: none;
+}
+
+.sk-post__content blockquote {
+  padding-left: 0.625rem;
+  border-left: 3px solid var(--sk-border);
+  color: var(--sk-post-muted);
+}
+
+.sk-post__content ul,
+.sk-post__content ol {
+  padding-left: 1.125rem;
+}
+
+/* ── Attachments ────────────────────────────────────────────────────────── */
+
+.sk-post__media {
+  margin-top: 0.125rem;
+}
+
+.sk-post__thumb {
+  overflow: hidden;
+  border-radius: var(--sk-radius);
+  background: var(--sk-base-200);
+}
+
+.sk-post__thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+/* ── Tags ───────────────────────────────────────────────────────────────── */
+
+.sk-post__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.sk-post__tag {
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--sk-post-chip-bg);
+  font-size: 0.75rem;
+  color: var(--sk-post-chip-color);
+  cursor: pointer;
+}
+
+.sk-post__tag--more {
+  cursor: default;
+  color: var(--sk-post-muted);
+}
+
+/* ── Metadata ───────────────────────────────────────────────────────────── */
+
+.sk-post__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--sk-post-muted);
+}
+
+/* ── Reactions ──────────────────────────────────────────────────────────── */
+
+.sk-post__reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.sk-post__reaction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--sk-border);
+  border-radius: 9999px;
+  background: var(--sk-post-react-bg);
+  font-size: 0.75rem;
+  color: var(--sk-post-react-color);
+}
+
+.sk-post__reaction-chip[data-reacted="true"] {
+  border-color: color-mix(in oklch, var(--sk-primary) 40%, transparent);
+  background: color-mix(in oklch, var(--sk-primary) 15%, transparent);
+  color: var(--sk-primary);
+}
+
+.sk-post__reaction-chip[data-reacted="true"] .sk-post__reaction-count {
+  color: var(--sk-primary);
+}
+
+.sk-post__sticker {
+  width: 1rem;
+  height: 1rem;
+  object-fit: contain;
+}
+
+.sk-post__emoji {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.sk-post__reaction-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+
+.sk-post__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sk-post__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--sk-post-muted);
+}
+
+.sk-post__stat--replies {
+  font-weight: 600;
+  color: var(--sk-base-content);
+}
+
+.sk-post__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.sk-post__link {
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--sk-border);
+  border-radius: 9999px;
+  background: var(--sk-post-chip-bg);
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--sk-post-chip-color);
+  cursor: pointer;
+}
+
+.sk-post__publisher,
+.sk-post__tag,
+.sk-post__reference-toggle,
+.sk-post__link {
+  transition: opacity 0.15s ease;
+}
+
+.sk-post__publisher:hover,
+.sk-post__tag:hover,
+.sk-post__link:hover {
+  opacity: 0.8;
+}
+
+/* ── States ─────────────────────────────────────────────────────────────── */
+
+.sk-state {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--sk-post-muted);
+}
+
+.sk-state--error {
+  color: var(--sk-primary);
+}

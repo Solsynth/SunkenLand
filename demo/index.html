@@ -408,6 +408,56 @@
       // "mine" highlight and clicking that chip takes it back.
       const MY_REACTIONS = { post_1: ["heart"] };
 
+      // Demo posts for `sk-post`, served by the post read below (each is a
+      // complete wire payload via `makePost`): a rich Markdown post, a reply
+      // whose reference preview shows, and an article card.
+      const DEMO_POSTS = {
+        post_demo_rich: {
+          visibility: 0,
+          ...makePost("post_demo_rich", { thumb_up: 12, party: 3, clap: 1 }, null),
+          content:
+            "# The post widget\n\n" +
+            "`sk-post` renders **one whole post**: the author header, the Markdown body, attachments, tags, reactions, and the stats footer.\n\n" +
+            "- public reads through `GET /sphere/posts/{id}`\n" +
+            "- the reference preview and the article card are the same element\n" +
+            "- app-only actions stay with the host\n\n" +
+            "```js\nSunkenLand.configure({ css: [\"/presets/post.css\"] });\n```\n\n" +
+            "More in the [docs](https://docs.solian.app).",
+          published_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          edited_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          replies_count: 5,
+          views_total: 128,
+          tags: [
+            { id: "t_demo_1", slug: "sunkenland", name: "SunkenLand" },
+            { id: "t_demo_2", slug: "widgets", name: "widgets" },
+            { id: "t_demo_3", slug: "markdown", name: "markdown" },
+            { id: "t_demo_4", slug: "release", name: "release" },
+          ],
+          attachments: [DEMO_ATTACHMENTS[0], DEMO_ATTACHMENTS[1]],
+        },
+        post_demo_reference: {
+          visibility: 0,
+          ...makePost("post_demo_reference", { heart: 2 }, null),
+          content: "Yes — `sk-post` folds the referenced post into a toggle.",
+          published_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+          replied_post: {
+            ...makePost("post_demo_parent", { thumb_up: 2 }, null),
+            content: "Does `sk-post` render the replied-to preview?",
+          },
+        },
+        post_demo_article: {
+          visibility: 0,
+          ...makePost("post_demo_article", {}, null),
+          type: 1,
+          title: "SunkenLand 0.2",
+          description: "The post widget, its preset, and the media grid it shares.",
+          content: "Articles keep their body in the detail presentation only.",
+          published_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          attachments: [DEMO_ATTACHMENTS[0]],
+          meta: { thumbnail: "a_demo_img" },
+        },
+      };
+
       // Stubbed API router: auth (token/account/publisher), post writes, and
       // the threaded reply reads used by sk-replies-list.
       window.fetch = async (input, init) => {
@@ -529,6 +579,9 @@
         // ── Reactions: summary read + the writes the element performs ─────
         if (/^\/sphere\/posts\/[^/]+$/.test(path) && method === "GET") {
           const id = path.split("/").pop();
+          // `sk-post`'s demo posts; every other id falls back to the
+          // reaction-summary payload below.
+          if (DEMO_POSTS[id]) return json(DEMO_POSTS[id]);
           return json(
             makePost(
               id,
@@ -708,6 +761,26 @@
     </div>
 
     <div class="demo-block">
+      <h2>Post (sk-post)</h2>
+      <p id="posts">
+        <sk-post post="post_demo_rich"></sk-post>
+        <sk-post post="post_demo_reference"></sk-post>
+        <sk-post post="post_demo_article"></sk-post>
+      </p>
+      <p class="hint">
+        <code>sk-post</code> renders one whole post the way FloatLand's
+        <code>PostCard</code> does: the author header (avatar and the colourful
+        name), the Markdown body, attachments through the shared media grid,
+        tags, metadata, the reaction summary, and the stats footer. Reads are
+        public through <code>GET /sphere/posts/{id}</code>. App-only actions —
+        the overflow menu, boosting, the composer, and reporting — are out of
+        scope: pair it with <code>sk-reaction-list</code> /
+        <code>sk-reply-composer</code>, or listen for
+        <code>post-click</code>.
+      </p>
+    </div>
+
+    <div class="demo-block">
       <h2>Media (sk-media / sk-media-collection)</h2>
       <sk-media file="a_demo_clip"></sk-media>
       <sk-media-collection files="a_demo_img, a_demo_clip, a_demo_spec" max-visible="2"></sk-media-collection>
@@ -807,6 +880,7 @@
           "../dist/presets/reply-composer.css",
           "../dist/presets/reactions.css",
           "../dist/presets/username.css",
+          "../dist/presets/post.css",
         ],
         oidc: { clientId: "sunkenland-demo" },
       });
@@ -970,6 +1044,28 @@
                     gradient: name ? getComputedStyle(name).backgroundImage : null,
                     tier: sr ? sr.querySelector('[part="membership"] title')?.textContent ?? null : null,
                     marks: sr ? sr.querySelectorAll(".sk-username__mark").length : 0,
+                  };
+                }),
+              ),
+          );
+        }
+        // The post widgets live inside the `#posts` block.
+        const postEls = [...document.querySelectorAll("#posts sk-post")];
+        if (postEls.length > 0) {
+          lines.push(
+            "posts=" +
+              JSON.stringify(
+                postEls.map((postEl) => {
+                  const sr = postEl.shadowRoot;
+                  const name = sr && sr.querySelector(".sk-post__publisher");
+                  const content = sr && sr.querySelector(".sk-post__content");
+                  const stats = sr && sr.querySelector(".sk-post__stats");
+                  return {
+                    name: name ? name.textContent : null,
+                    bodyLength: content ? content.textContent.length : 0,
+                    tags: sr ? sr.querySelectorAll(".sk-post__tag").length : 0,
+                    chips: sr ? sr.querySelectorAll(".sk-post__reaction-chip").length : 0,
+                    stats: stats ? stats.textContent : null,
                   };
                 }),
               ),

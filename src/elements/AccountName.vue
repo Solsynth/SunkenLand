@@ -4,6 +4,7 @@ import { AccountApi, ApiClient, API_BASE_URL } from "../api";
 import { getConfig, onConfigChange, toStylesheetList } from "../config";
 import { getSession } from "../session";
 import { getHostElement, markHost } from "../utils/host";
+import { flagAttr } from "../utils/attrs";
 import {
   getUsernameTier,
   hasActiveMembership,
@@ -105,11 +106,15 @@ const props = withDefaults(
     verified?: string | number | boolean;
     verifiedTitle?: string;
     verifiedDescription?: string;
-    bot?: boolean;
+    /**
+     * Boolean attributes arrive as strings (`bold="false"`), so these accept
+     * both — `utils/attrs.flagAttr` reads them.
+     */
+    bot?: boolean | string;
     size?: string;
-    bold?: boolean;
+    bold?: boolean | string;
     url?: string;
-    ignorePermissions?: boolean;
+    ignorePermissions?: boolean | string;
     css?: string;
     baseUrl?: string;
   }>(),
@@ -157,20 +162,9 @@ const fetched = ref<UsernameData | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-/**
- * Custom-element attributes arrive as strings: bare `bold` and `bold=""` mean
- * "on", while `bold="false"` means off.
- */
-function flag(value: boolean | undefined, fallback: boolean): boolean {
-  if (value === undefined) return fallback;
-  return value !== false && String(value) !== "false";
-}
-
-const isBold = computed(() => flag(props.bold, true));
-const isBot = computed(() => flag(props.bot, false));
-const ignorePermissions = computed(() =>
-  flag(props.ignorePermissions, false),
-);
+const isBold = computed(() => flagAttr(props.bold, true));
+const isBot = computed(() => flagAttr(props.bot, false));
+const ignorePermissions = computed(() => flagAttr(props.ignorePermissions, false));
 
 /** The id/name to fetch: only the string form of `account` is a reference. */
 const accountRef = computed(() =>

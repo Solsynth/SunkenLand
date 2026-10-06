@@ -41,31 +41,48 @@ function safeUrl(url: string): string | null {
 const INLINE_RE =
   /(`+)([^`]+?)\1|(\*\*|__)(.+?)\3|~~(.+?)~~|(\*)(.+?)\6|\[([^\]]+)\]\(([^)\s]+)\)/g;
 
+/**
+ * Render one inline match to HTML. Every captured text run is escaped before it
+ * is wrapped, so nothing a post contains can become markup.
+ */
+function renderInlineMatch(match: RegExpExecArray): string {
+  const [
+    ,
+    codeDelim,
+    codeText,
+    strongDelim,
+    strongText,
+    strikeText,
+    emDelim,
+    emText,
+    linkText,
+    linkUrl,
+  ] = match;
+  if (codeDelim) return `<code>${escapeHtml(codeText ?? "")}</code>`;
+  if (strongDelim) return `<strong>${renderInline(strongText ?? "")}</strong>`;
+  if (strikeText !== undefined) return `<del>${renderInline(strikeText)}</del>`;
+  if (emDelim) return `<em>${renderInline(emText ?? "")}</em>`;
+  const url = linkUrl === undefined ? null : safeUrl(linkUrl);
+  if (!url) return escapeHtml(linkText ?? "");
+  return `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${renderInline(linkText ?? "")}</a>`;
+}
+
+/**
+ * Inline Markdown pass. Text *between* constructs is escaped too — otherwise a
+ * post body could smuggle raw HTML through an unmatched run
+ * (`<img onerror=…>`), which is exactly what `html: false` prevents upstream.
+ */
 function renderInline(text: string): string {
-  return text.replace(
-    INLINE_RE,
-    (
-      _match,
-      codeDelim: string | undefined,
-      codeText: string | undefined,
-      strongDelim: string | undefined,
-      strongText: string | undefined,
-      strikeText: string | undefined,
-      emDelim: string | undefined,
-      emText: string | undefined,
-      linkText: string | undefined,
-      linkUrl: string | undefined,
-    ) => {
-      if (codeDelim) return `<code>${escapeHtml(codeText ?? "")}</code>`;
-      if (strongDelim) return `<strong>${renderInline(strongText ?? "")}</strong>`;
-      if (strikeText !== undefined)
-        return `<del>${renderInline(strikeText)}</del>`;
-      if (emDelim) return `<em>${renderInline(emText ?? "")}</em>`;
-      const url = linkUrl === undefined ? null : safeUrl(linkUrl);
-      if (!url) return escapeHtml(linkText ?? "");
-      return `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${renderInline(linkText ?? "")}</a>`;
-    },
-  );
+  let out = "";
+  let last = 0;
+  // `matchAll` iterates over its own clone of the regex, so the recursion above
+  // cannot disturb this loop's position.
+  for (const match of text.matchAll(INLINE_RE)) {
+    out += escapeHtml(text.slice(last, match.index));
+    out += renderInlineMatch(match as RegExpExecArray);
+    last = match.index + match[0].length;
+  }
+  return out + escapeHtml(text.slice(last));
 }
 
 const HEADING_RE = /^(#{1,6})\s+(.*)$/;

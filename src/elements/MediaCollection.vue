@@ -5,6 +5,7 @@ import { getConfig, onConfigChange, toStylesheetList } from "../config";
 import { getSession } from "../session";
 import type { FileLike } from "../utils/files";
 import { getHostElement, markHost } from "../utils/host";
+import { flagAttr } from "../utils/attrs";
 import MediaGrid from "./MediaGrid.vue";
 
 /**
@@ -66,7 +67,8 @@ const props = withDefaults(
     /** Host-supplied files; JavaScript-only (arrays have no attribute form). */
     attachments?: SnFileAttachment[] | null;
     maxVisible?: number;
-    flush?: boolean;
+    /** Attribute arrives as a string (`flush="false"`); `flagAttr` reads it. */
+    flush?: boolean | string;
     fit?: string;
     css?: string;
     baseUrl?: string;
@@ -106,11 +108,9 @@ const stylesheets = computed<string[]>(() => {
 
 /**
  * Custom-element attributes arrive as strings: bare `flush` and `flush=""`
- * mean "on", while `flush="false"` means off.
+ * mean "on", while `flush="false"` means off (see `utils/attrs`).
  */
-const flushLayout = computed(
-  () => props.flush !== false && String(props.flush) !== "false",
-);
+const flushLayout = computed(() => flagAttr(props.flush, false));
 const fitMode = computed(() => (props.fit === "contain" ? "contain" : "cover"));
 
 const fetched = ref<FileLike[]>([]);
