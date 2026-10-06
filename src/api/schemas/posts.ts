@@ -14,7 +14,9 @@ import { snId, snTimestamp } from "./common";
 export const snFileAttachmentSchema = z.object({
   id: snId,
   name: z.string(),
-  url: z.string().optional(),
+  // The wire sends `null` for files without a public URL (e.g. publisher
+  // avatars/backgrounds before a CDN URL is resolved) — not just omission.
+  url: z.string().nullable().optional(),
   mimeType: z.string(),
   hasCompression: z.boolean(),
   hasThumbnail: z.boolean(),
