@@ -1,0 +1,155 @@
+/**
+ * SunkenLand preset stylesheet for `sk-username` — one colourful username.
+ *
+ * Replicates FloatLand's `AccountName.vue` layout: an inline-flex row of the
+ * name, the membership star, the verification mark, the bot mark, and any
+ * `suffix` the host slots in. It does **not** colour the name: the colour is
+ * data (the profile's custom colour, gated by the Stellar tier) and the
+ * element applies it inline. This file only lays the row out.
+ *
+ * Load it with the element's `css` attribute:
+ *
+ *   <sk-username account="…" css="https://cdn…/presets/username.css"></sk-username>
+ *
+ * The stylesheet is injected into the element's shadow root as a <link>, so it
+ * only applies to this element. Override the `--sk-username-*` tokens (and the
+ * shared `--sk-*` surfaces) on the element from your own CSS to theme it:
+ *
+ *   Surfaces:   --sk-font, --sk-base-100, --sk-base-300, --sk-base-content,
+ *               --sk-primary
+ *   Row:        --sk-username-gap, --sk-username-mark-size,
+ *               --sk-username-name-weight
+ *   States:     --sk-username-state-color, --sk-username-error-color
+ *
+ *   sk-username { --sk-username-gap: 0.35rem; }
+ *
+ * `:host` rules are scoped to the element's marker class
+ * (`:host(.sk-username)`, which the component sets on the host) so configuring
+ * every preset at once cannot leak this element's surface onto the others. The
+ * class also survives custom tag names (`defineUsername("my-name")`).
+ */
+
+:host(.sk-username) {
+  --sk-font: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sk-base-100: oklch(100% 0 0);
+  --sk-base-300: oklch(95% 0 0);
+  --sk-base-content: oklch(21% 0.006 285.885);
+  --sk-primary: oklch(62% 0.0873 281deg);
+
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  vertical-align: middle;
+  box-sizing: border-box;
+  font-family: var(--sk-font);
+  font-size: 0.875rem;
+  line-height: 1.25;
+  color: var(--sk-base-content);
+  color-scheme: light;
+}
+
+/**
+ * The row inside the shadow root. The host is only a wrapper, so the flex row
+ * has to be declared here too: without it the marks are inline boxes sitting on
+ * the text baseline and the icons look misaligned against the name.
+ */
+.sk-username {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-username-gap, 0.25rem);
+  max-width: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host(.sk-username) {
+    --sk-base-100: oklch(0% 0 0);
+    --sk-base-300: oklch(25% 0.013 285.805);
+    --sk-base-content: oklch(97.807% 0.029 256.847);
+    --sk-primary: oklch(50% 0.0873 281deg);
+    color-scheme: dark;
+  }
+}
+
+/* ── The name ───────────────────────────────────────────────────────────── */
+
+.sk-username__name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* The colour (or the gradient clip) is applied inline by the element. */
+}
+
+/* `data-*` markers live on the shadow root's `.sk-username` row (same approach
+   as `.sk-media-grid[data-flush]`), so size/weight rules target it there. */
+.sk-username[data-size="sm"] .sk-username__name {
+  font-size: 0.75rem;
+}
+
+.sk-username[data-size="lg"] .sk-username__name {
+  font-size: 1rem;
+}
+
+.sk-username[data-bold] .sk-username__name {
+  font-weight: var(--sk-username-name-weight, 600);
+}
+
+.sk-username:not([data-bold]) .sk-username__name {
+  font-weight: 500;
+}
+
+/* ── Marks ──────────────────────────────────────────────────────────────── */
+
+.sk-username__mark {
+  flex-shrink: 0;
+  width: var(--sk-username-mark-size, 0.875rem);
+  height: var(--sk-username-mark-size, 0.875rem);
+  /* `currentColor` is set per mark inline (tier colour / verification type). */
+}
+
+.sk-username__mark--bot {
+  /* FloatLand greys the bot mark; the verification and membership marks keep
+     their data-driven colour. */
+  color: color-mix(in oklch, var(--sk-base-content) 50%, transparent);
+}
+
+.sk-username__suffix {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--sk-username-gap, 0.25rem);
+}
+
+/* ── Interaction ────────────────────────────────────────────────────────── */
+
+:host(.sk-username) .sk-username[data-clickable] {
+  cursor: pointer;
+}
+
+:host(.sk-username) .sk-username[data-clickable]:focus-visible {
+  outline: 2px solid var(--sk-primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* ── States (kept here so `sk-username` stands alone with just this
+   stylesheet; bytes are identical to the reply list's copy). ───────────── */
+
+.sk-state {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(
+    --sk-username-state-color,
+    color-mix(in oklch, var(--sk-base-content) 50%, transparent)
+  );
+}
+
+.sk-state--error {
+  color: var(--sk-username-error-color, var(--sk-primary));
+}

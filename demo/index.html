@@ -16,6 +16,44 @@
             '<text x="32" y="42" font-family="sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle">B</text>' +
             "</svg>",
         );
+      // Accounts the username widget resolves through
+      // `GET /stargate/accounts/{id}`: one per colour case the Stellar tier
+      // gate distinguishes (a named palette colour, a gradient, and the tier's
+      // default membership colour).
+      const DEMO_ACCOUNTS = {
+        acc_demo_pink: {
+          id: "acc_demo_pink",
+          name: "pinkster",
+          nick: "Pinkster",
+          profile: {
+            id: "pf_demo_pink",
+            username_color: { type: "plain", value: "pink", direction: null, colors: [] },
+          },
+          perk_subscription: { identifier: "solian.stellar.primary", is_active: true },
+        },
+        acc_demo_gradient: {
+          id: "acc_demo_gradient",
+          name: "bluewhaletech",
+          nick: "BluewhaleTech",
+          profile: {
+            id: "pf_demo_gradient",
+            username_color: {
+              type: "gradient",
+              value: null,
+              direction: "to bottom",
+              colors: ["#39c5bb", "#0081cb"],
+            },
+          },
+          perk_subscription: { identifier: "solian.stellar.supernova", is_active: true },
+        },
+        acc_demo_member: {
+          id: "acc_demo_member",
+          name: "member",
+          nick: "Member",
+          profile: { id: "pf_demo_member", username_color: null },
+          perk_subscription: { identifier: "solian.stellar.nova", is_active: true },
+        },
+      };
       // Drive files for the media demo: an inline image (so the demo renders
       // without network access) plus a video and a document whose bytes the
       // elements resolve from the drive endpoint by id. `sk-media` /
@@ -458,6 +496,12 @@
           // Mirrors the real API: this endpoint requires the session token.
           return authed ? json(DEMO_ACCOUNT) : json({ message: "unauthorized" }, 401);
         }
+        // ── Accounts by id (`sk-username account="…"`) ────────────────────
+        const accountMatch = path.match(/^\/stargate\/accounts\/([^/]+)$/);
+        if (accountMatch && method === "GET") {
+          const account = DEMO_ACCOUNTS[decodeURIComponent(accountMatch[1])];
+          return account ? json(account) : json({ message: "not found" }, 404);
+        }
         if (path === "/sphere/publishers/of/acc_me") return json([DEMO_PUBLISHER, DEMO_SECOND_PUBLISHER]);
         if (path === "/sphere/publishers" && req.searchParams.get("mine") === "true") {
           return authed ? json([DEMO_PUBLISHER, DEMO_SECOND_PUBLISHER]) : json({ message: "unauthorized" }, 401);
@@ -643,6 +687,27 @@
     </div>
 
     <div class="demo-block">
+      <h2>Username (sk-username)</h2>
+      <p id="username">
+        <sk-username account="acc_demo_pink"></sk-username>
+        <sk-username account="acc_demo_gradient" size="lg"></sk-username>
+        <sk-username account="acc_demo_member"></sk-username>
+      </p>
+      <p class="hint">
+        <code>sk-username</code> renders a name the way FloatLand's
+        <code>AccountName</code> does: the profile's custom colour, gated by the
+        Stellar tier (<code>primary</code> → named palette colours,
+        <code>nova</code> → any plain colour, <code>supernova</code> →
+        gradients), with the membership, verification, and bot marks beside it.
+        The first two read the account through
+        <code>GET /stargate/accounts/{id}</code>; the third has no custom colour,
+        so it falls back to its tier's colour. Attributes work without an
+        account too: <code>&lt;sk-username name="Fan" color="purple"
+        tier="solian.stellar.primary" verified&gt;&lt;/sk-username&gt;</code>.
+      </p>
+    </div>
+
+    <div class="demo-block">
       <h2>Media (sk-media / sk-media-collection)</h2>
       <sk-media file="a_demo_clip"></sk-media>
       <sk-media-collection files="a_demo_img, a_demo_clip, a_demo_spec" max-visible="2"></sk-media-collection>
@@ -741,6 +806,7 @@
           "../dist/presets/login.css",
           "../dist/presets/reply-composer.css",
           "../dist/presets/reactions.css",
+          "../dist/presets/username.css",
         ],
         oidc: { clientId: "sunkenland-demo" },
       });
@@ -886,6 +952,28 @@
           lines.push("composerAs=" + (((composerSr.querySelector(".sk-composer__as") || {}).textContent || "-")).trim());
           lines.push("composerInput=" + (textarea ? "yes" : "no"));
           lines.push("composerError=" + (((composerSr.querySelector(".sk-composer__error") || {}).textContent || "-")).trim());
+        }
+        // The widget's elements live inside the `#username` block.
+        const usernameEl = document.querySelector("#username sk-username");
+        const usernameSr = usernameEl && usernameEl.shadowRoot;
+        if (usernameSr) {
+          const names = [...document.querySelectorAll("#username sk-username")];
+          lines.push(
+            "usernames=" +
+              JSON.stringify(
+                names.map((nameEl) => {
+                  const sr = nameEl.shadowRoot;
+                  const name = sr && sr.querySelector(".sk-username__name");
+                  return {
+                    text: name ? name.textContent : null,
+                    color: name ? getComputedStyle(name).color : null,
+                    gradient: name ? getComputedStyle(name).backgroundImage : null,
+                    tier: sr ? sr.querySelector('[part="membership"] title')?.textContent ?? null : null,
+                    marks: sr ? sr.querySelectorAll(".sk-username__mark").length : 0,
+                  };
+                }),
+              ),
+          );
         }
         lines.push("sessionState=" + SunkenLand.session.state);
         lines.push("sessionUser=" + (SunkenLand.session.user ? SunkenLand.session.user.name : "-"));

@@ -11,6 +11,7 @@ import { defineLogin } from "./login";
 import { defineReactionList } from "./reaction-list";
 import { defineReplyComposer } from "./reply-composer";
 import { defineMedia, defineMediaCollection } from "./media";
+import { defineUsername } from "./username";
 
 defineRepliesList();
 defineLogin();
@@ -18,6 +19,7 @@ defineReactionList();
 defineReplyComposer();
 defineMedia();
 defineMediaCollection();
+defineUsername();
 
 export { RepliesListElement, defineRepliesList } from "./replies-list";
 export { LoginElement, defineLogin } from "./login";
@@ -29,6 +31,7 @@ export {
   defineMedia,
   defineMediaCollection,
 } from "./media";
+export { UsernameElement, defineUsername } from "./username";
 
 // Drive-file helpers: the API sends `url: null` and serves files from
 // `…/drive/files/{id}`, so hosts rendering the same files need the same URL
@@ -53,6 +56,30 @@ export {
   formatRelativeTime,
 } from "../utils/format";
 export type { PublisherLike, PictureLike } from "../utils/format";
+
+// Colourful-username rules (`sk-username` and any host rendering the same
+// names): the palette, the Stellar tier gate, the membership defaults, and the
+// mark geometry.
+export {
+  USERNAME_PLAIN_COLORS,
+  USERNAME_TIER_COLORS,
+  USERNAME_TIER_NAMES,
+  USERNAME_VERIFICATION_COLORS,
+  USERNAME_VERIFICATION_MARKS,
+  USERNAME_MEMBERSHIP_MARK,
+  USERNAME_BOT_MARK,
+  canUseUsernameColor,
+  getUsernameTier,
+  hasActiveMembership,
+  membershipColor,
+  membershipLabel,
+  resolveUsernameColor,
+  usernameColorStyle,
+  verificationColor,
+  verificationLabel,
+  verificationMark,
+} from "../utils/username";
+export type { UsernameColorSource } from "../utils/username";
 
 // Library-wide configuration: stylesheet presets, API origin, auth hooks,
 // session override.

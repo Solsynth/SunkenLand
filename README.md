@@ -87,6 +87,8 @@ Server routes can use the package's API layer directly — `import { createApiCl
 
 <sk-media-collection files="01M48SNHMZQ34TXZKRMJQX7JG1, 01M49QXKG9AK9WMYFC4RMSS26X"></sk-media-collection>
 
+<sk-username account="8792577d-407a-44f7-9720-8bad7efdc7a2"></sk-username>
+
 <sk-login></sk-login>
 ```
 
@@ -100,6 +102,7 @@ SunkenLand.configure({
     "/presets/login.css",
     "/presets/reply-composer.css",
     "/presets/reactions.css",
+    "/presets/username.css",
   ],
   // Reaction stickers. The set ships in `dist/stickers/` (copied from
   // FloatLand's sticker set) — point this at your CDN, or omit it for emoji.
@@ -211,6 +214,56 @@ publisher pictures) are served from the drive endpoint by id —
 `https://api.solian.app/drive/files/{id}` — through the exported `getFileUrl`,
 the same helper `getAvatarUrl` uses for avatars. See
 [Drive files](#drive-files) below.
+
+### `sk-username`
+
+A colourful username — the embeddable port of FloatLand's `AccountName.vue`:
+the display name (`nick` over `name`) in the profile's custom colour, with the
+membership, verification, and bot marks beside it.
+
+The colour is data, gated by the Stellar tier:
+
+| tier | may use |
+| --- | --- |
+| `solian.stellar.primary` | `plain` colours from the named palette |
+| `solian.stellar.nova` | any `plain` colour (named or hex) |
+| `solian.stellar.supernova` | everything, gradients included |
+| none / unknown | nothing — the name stays uncoloured |
+
+A custom colour the tier does not allow is **dropped**, not downgraded, and only
+a profile with no custom colour at all gets the tier's default membership colour.
+
+What to render comes from, in order of precedence:
+
+1. `publisher` **property** — the author object posts and replies embed, so a
+   host that already holds a post needs no request
+   (`el.publisher = post.publisher`);
+2. `account` **property** — a full account object, no request;
+3. `account` **attribute** — an account id or name, resolved through
+   `GET /stargate/accounts/{account}` (a public read);
+4. `name`/`nick` **attributes** — a bare string, no request.
+
+Explicit attributes override the resolved data field by field, so the element
+works with nothing but attributes too.
+
+- Attributes: `account`, `name`, `nick`, `color` (palette name or hex),
+  `colors` + `direction` (gradient), `tier`, `verified` (bare = type `0`, or
+  `0`–`6`), `verified-title`, `verified-description`, `bot`, `size`
+  (`sm`/`md`/`lg`), `bold` (`bold="false"` for normal weight), `url` (makes the
+  element a link), `ignore-permissions` (render the colour even when the tier
+  denies it), `css`, `base-url`
+- Properties: `account` (`string | SnAccount`), `publisher` (`SnPublisher`)
+- Events: `username-click` (`detail = { name, account, publisher, url }`) —
+  cancelable; the default action opens `url` in a new tab, and nothing happens
+  without it
+- Slots: `loading`, `error`, `suffix` (extra marks after the built-in ones)
+- Parts: `name`, `verification`, `membership`, `bot`, `suffix`, `state`, `error`
+
+The colour rules are exported for hosts that render names themselves —
+`usernameColorStyle`, `canUseUsernameColor`, `getUsernameTier`,
+`USERNAME_PLAIN_COLORS`, `USERNAME_TIER_COLORS`,
+`USERNAME_VERIFICATION_COLORS` — and accept either a profile-shaped object or a
+top-level `usernameColor`.
 
 ### `sk-login`
 
@@ -397,9 +450,10 @@ at once, so each preset scopes its rules to a marker class the component sets on
 its host (`sk-replies-list.sk-replies`, `sk-login.sk-login`,
 `sk-reply-composer.sk-composer`, `sk-reaction-list.sk-reactions`,
 `sk-media.sk-media`, `sk-media-collection.sk-media` — the two media elements
-share one family marker because they share one preset). That keeps one preset
-from styling — or clipping, via `overflow` — another element. The marker also
-survives custom tag names (`defineReactionList("my-reactions")`).
+share one family marker because they share one preset — and
+`sk-username.sk-username`). That keeps one preset from styling — or clipping,
+via `overflow` — another element. The marker also survives custom tag names
+(`defineReactionList("my-reactions")`).
 
 `presets/replies-list.css` imports `presets/media.css` (both ship in
 `dist/presets/`), because reply attachments render through the media grid: the
@@ -459,6 +513,8 @@ Parts — `sk-login`: `guest`, `error`, `button`, `logo`, `label`, `user`,
 `video`, `play`, `audio`, `file`, `icon`, `name`, `counter`, `scroll`,
 `arrow-prev`, `arrow-next`, `more`, `state`, `error`, `empty` — and the reply
 list exposes those same media parts for its replies' attachments.
+`sk-username`: `name`, `verification`, `membership`, `bot`, `suffix`, `state`,
+`error`.
 
 Button text and icon are attributes too — `label="Continue with Solar"`,
 `icon="/acme-mark.svg"`, or `icon=""` to drop the mark.
@@ -562,6 +618,7 @@ the host element.
 - `presets/login.css`
 - `presets/reply-composer.css`
 - `presets/reactions.css`
+- `presets/username.css`
 
 ## Publishing
 

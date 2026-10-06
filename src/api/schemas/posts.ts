@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { snId, snTimestamp } from "./common";
+// Posts embed their author's account, whose profile carries the username
+// colour and the Stellar tier that gates it.
+import { snPerkSubscriptionSchema, snUsernameColorSchema } from "./account";
 
 /**
  * Post / reply schemas for the Sphere data API.
@@ -37,8 +40,14 @@ export const snPostAccountSchema = z.object({
       bio: z.string().nullable(),
       picture: snFileAttachmentSchema.nullable(),
       background: snFileAttachmentSchema.nullable(),
+      // Present on real payloads; what makes an embedded name colourful.
+      usernameColor: snUsernameColorSchema.nullable().optional(),
     })
     .nullable(),
+  // Also present on the embedded account: the colour gate and the bot mark
+  // both live here, so a post/reply payload alone can style the name.
+  automatedId: z.string().nullable().optional(),
+  perkSubscription: snPerkSubscriptionSchema.nullable().optional(),
 });
 
 /** Post publisher (author). */

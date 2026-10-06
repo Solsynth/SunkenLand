@@ -6,6 +6,7 @@ import { defineRepliesList } from "../src/elements/replies-list";
 import { defineLogin } from "../src/elements/login";
 import { defineReactionList } from "../src/elements/reaction-list";
 import { defineReplyComposer } from "../src/elements/reply-composer";
+import { defineUsername } from "../src/elements/username";
 import { defineMedia, defineMediaCollection } from "../src/elements/media";
 
 // Elements fetch `https://api.solian.app` — stub it so stories run anywhere.
@@ -24,6 +25,7 @@ configure({
     "/presets/login.css",
     "/presets/reply-composer.css",
     "/presets/reactions.css",
+    "/presets/username.css",
   ],
 });
 
@@ -33,6 +35,8 @@ defineRepliesList("sk-demo-replies");
 defineLogin();
 defineReactionList();
 defineReplyComposer();
+defineUsername();
+defineUsername("sk-demo-username");
 defineMedia();
 defineMedia("sk-demo-media");
 defineMediaCollection();

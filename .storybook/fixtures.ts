@@ -29,7 +29,9 @@
  * can point an element at a real post. Requests are not recorded in that mode.
  */
 
+import { snakeToCamel } from "../src/api";
 import { OIDC_MESSAGE_TYPE } from "../src/session";
+import type { UsernameData } from "../src/utils/username";
 
 export interface WireReply {
   post: Record<string, unknown>;
@@ -90,7 +92,33 @@ function makePost(
       picture: null,
       background: null,
       verification: null,
-      account: { id: "acc_1", name: "alice", nick: "Alice", profile: null },
+      account: {
+        id: "acc_1",
+        name: "alice",
+        nick: "Alice",
+        automated_id: null,
+        // The reply carries its author's colour and tier, so a host can render
+        // a colourful name without a second request (`sk-username`).
+        profile: {
+          id: "pf_1",
+          first_name: "Alice",
+          last_name: null,
+          bio: null,
+          picture: null,
+          background: null,
+          username_color: {
+            type: "plain",
+            value: "teal",
+            direction: null,
+            colors: [],
+          },
+          verification: null,
+        },
+        perk_subscription: {
+          identifier: "solian.stellar.nova",
+          is_active: true,
+        },
+      },
       stat: null,
       created_at: "2023-01-01T00:00:00Z",
     },
@@ -471,6 +499,120 @@ const ACCOUNT_WIRE = {
   updated_at: "2023-01-01T00:00:00Z",
 };
 
+/**
+ * Accounts `sk-username` resolves by id — one per colour case the Stellar gate
+ * distinguishes, mirroring real profiles (`profile.username_color` is the wire
+ * field; `perk_subscription.identifier` is the tier that gates it).
+ *
+ * - `acc_pink`: named plain colour + `primary` → allowed
+ * - `acc_gradient`: gradient + `supernova` → allowed, the shape
+ *   `sk-replies-list` replies carry
+ * - `acc_denied`: gradient + `primary` → the tier forbids it, so no colour
+ * - `acc_plain_nova`: hex plain colour + `nova` → allowed
+ * - `acc_member`: no custom colour + active `nova` → the tier's default colour
+ * - `acc_untiered`: custom colour but no subscription → no colour
+ * - `acc_bot`: an automated account with an organization verification mark
+ */
+export const USERNAME_ACCOUNTS_WIRE: Record<string, Record<string, unknown>> = {
+  acc_pink: {
+    id: "acc_pink",
+    name: "pinkster",
+    nick: "Pinkster",
+    profile: {
+      id: "pf_pink",
+      username_color: { type: "plain", value: "pink", direction: null, colors: [] },
+      verification: null,
+      active_badge: null,
+    },
+    perk_subscription: { identifier: "solian.stellar.primary", is_active: true },
+  },
+  acc_gradient: {
+    id: "acc_gradient",
+    name: "bluewhaletech",
+    nick: "BluewhaleTech",
+    profile: {
+      id: "pf_gradient",
+      username_color: {
+        type: "gradient",
+        value: null,
+        direction: "to bottom",
+        colors: ["#39c5bb", "#0081cb"],
+      },
+      verification: null,
+    },
+    perk_subscription: { identifier: "solian.stellar.supernova", is_active: true },
+  },
+  acc_denied: {
+    id: "acc_denied",
+    name: "greedy",
+    nick: "Greedy",
+    profile: {
+      id: "pf_denied",
+      username_color: {
+        type: "gradient",
+        direction: "to right",
+        colors: ["red", "blue"],
+        value: null,
+      },
+    },
+    perk_subscription: { identifier: "solian.stellar.primary", is_active: true },
+  },
+  acc_plain_nova: {
+    id: "acc_plain_nova",
+    name: "hexed",
+    nick: "Hexed",
+    profile: {
+      id: "pf_plain_nova",
+      username_color: { type: "plain", value: "#f97316", direction: null, colors: [] },
+    },
+    perk_subscription: { identifier: "solian.stellar.nova", is_active: true },
+  },
+  acc_member: {
+    id: "acc_member",
+    name: "member",
+    nick: "Member",
+    profile: { id: "pf_member", username_color: null },
+    perk_subscription: { identifier: "solian.stellar.nova", is_active: true },
+  },
+  acc_untiered: {
+    id: "acc_untiered",
+    name: "untiered",
+    nick: "Untiered",
+    profile: {
+      id: "pf_untiered",
+      username_color: { type: "plain", value: "red", direction: null, colors: [] },
+    },
+    perk_subscription: null,
+  },
+  acc_bot: {
+    id: "acc_bot",
+    name: "relay",
+    nick: "Relay",
+    automated_id: "bot_relay",
+    profile: {
+      id: "pf_bot",
+      verification: {
+        type: 3,
+        title: "Organization",
+        description: "Operated by Solar Network",
+        verified_by: "Solar Network",
+      },
+    },
+    perk_subscription: null,
+  },
+};
+
+/**
+ * One account as a host would hold it (camelCase, the parsed shape), for the
+ * `account`/`publisher` property paths — no request, which the stories assert.
+ */
+export function usernameAccountFixture(key: string): UsernameData {
+  const wire = USERNAME_ACCOUNTS_WIRE[key] ?? {};
+  // The stub stores wire payloads; the elements consume the camelCase form the
+  // API client produces, so convert once here.
+  return snakeToCamel(wire) as UsernameData;
+}
+
 const SECOND_PUBLISHER_WIRE = {
   id: "p_me_alt",
   name: "me-alt",
@@ -683,6 +825,22 @@ export function installApiStub(): void {
         auth === `Bearer ${CONFIGURED_TOKEN}` ||
         (oidcToken && !stubState.rejectAccountApiForOidc);
       return valid ? json(ACCOUNT_WIRE) : json({ message: "unauthorized" }, 401);
+    }
+    // ── Accounts by id/name (used by `sk-username account="…"`) ───────────
+    const accountMatch = url.pathname.match(/^\/stargate\/accounts\/([^/]+)$/);
+    if (accountMatch && method === "GET") {
+      record();
+      const key = decodeURIComponent(accountMatch[1] ?? "");
+      const account = USERNAME_ACCOUNTS_WIRE[key];
+      // Public read, like the real endpoint; unknown ids 404 with a hint.
+      return account
+        ? json(account)
+        : json(
+            {
+              message: `Unknown fixture account "${key}" — use one of ${Object.keys(USERNAME_ACCOUNTS_WIRE).join(", ")}, or set the API toolbar to Live for real accounts.`,
+            },
+            404,
+          );
     }
     if (url.pathname === "/sphere/publishers/of/acc_me") {
       record();

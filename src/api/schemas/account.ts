@@ -10,6 +10,46 @@ import { snId, snMeta, snNullableTimestamp, snTimestamp } from "./common";
 
 // ── Profile ─────────────────────────────────────────────────────────────────
 
+/**
+ * A profile's custom username colour (`profile.username_color`).
+ *
+ * `type` is `plain` (a named palette entry or a hex value in `value`) or
+ * `gradient` (`colors` + `direction`). The wire sends `null`/`[]` for the
+ * fields the chosen type does not use, and the shorter `{ type, value }` shape
+ * on some endpoints — so every field but `type` is optional.
+ */
+export const snUsernameColorSchema = z.object({
+  type: z.string().nullable().optional(),
+  value: z.string().nullable().optional(),
+  direction: z.string().nullable().optional(),
+  colors: z.array(z.string()).nullable().optional(),
+});
+export type SnUsernameColor = z.infer<typeof snUsernameColorSchema>;
+
+/**
+ * The Stellar membership subscription that gates custom username colours
+ * (`account.perk_subscription`). `identifier` carries the tier
+ * (`solian.stellar.primary|nova|supernova`); `isActive` gates the membership
+ * mark.
+ */
+export const snPerkSubscriptionSchema = z.object({
+  id: snId.optional(),
+  identifier: z.string().nullable().optional(),
+  groupIdentifier: z.string().nullable().optional(),
+  displayName: z.string().nullable().optional(),
+  perkLevel: z.number().nullable().optional(),
+  isActive: z.boolean().nullable().optional(),
+  isAvailable: z.boolean().nullable().optional(),
+  isPendingActivation: z.boolean().nullable().optional(),
+  isFreeTrial: z.boolean().nullable().optional(),
+  /** 1 = active. Some endpoints send the price as a string, others a number. */
+  status: z.number().nullable().optional(),
+  begunAt: z.string().nullable().optional(),
+  endedAt: z.string().nullable().optional(),
+  renewalAt: z.string().nullable().optional(),
+});
+export type SnPerkSubscription = z.infer<typeof snPerkSubscriptionSchema>;
+
 export const snAccountProfileSchema = z.object({
   id: z.string().optional(),
   bio: z.string().optional(),
@@ -47,6 +87,8 @@ export const snAccountProfileSchema = z.object({
     .nullable()
     .optional(),
   activeBadge: z.lazy(() => snAccountBadgeSchema).nullable().optional(),
+  /** Custom username colour; gated by the Stellar tier (see `utils/username`). */
+  usernameColor: snUsernameColorSchema.nullable().optional(),
   level: z.number().optional(),
   experience: z.number().optional(),
   levelingProgress: z.number().optional(),
@@ -94,7 +136,8 @@ export const snAccountSchema = z.object({
   automatedId: z.string().nullable().optional(),
   isSuperuser: z.boolean().optional(),
   perkLevel: z.number().optional(),
-  perkSubscription: z.record(z.string(), z.unknown()).nullable().optional(),
+  /** Stellar membership; gates username colours and the membership mark. */
+  perkSubscription: snPerkSubscriptionSchema.nullable().optional(),
   profile: z.lazy(() => snAccountProfileSchema).optional(),
   badges: z.array(z.lazy(() => snAccountBadgeSchema)).optional(),
   contacts: z.array(snContactMethodSchema).optional(),
