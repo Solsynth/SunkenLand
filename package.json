@@ -1,6 +1,6 @@
 {
   "name": "@solsynth/sunkenland",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Embeddable SunkenLand web components (sk-*) with a zod-validated Stargate API client.",
   "type": "module",
   "license": "MIT",
