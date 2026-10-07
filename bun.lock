@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@solar-network/sunken-land",
+      "name": "@solar-network/sunkenland",
       "dependencies": {
         "@unlazy/vue": "^2.0.1",
         "vue": "^3.5.43",

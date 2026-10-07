@@ -81,16 +81,16 @@
     "dist",
     "LICENSE"
   ],
-  "main": "./dist/sunken-land.js",
-  "module": "./dist/sunken-land.js",
+  "main": "./dist/sunkenland.js",
+  "module": "./dist/sunkenland.js",
   "types": "./dist/types/elements/index.d.ts",
-  "unpkg": "./dist/sunken-land.iife.js",
-  "jsdelivr": "./dist/sunken-land.iife.js",
+  "unpkg": "./dist/sunkenland.iife.js",
+  "jsdelivr": "./dist/sunkenland.iife.js",
   "exports": {
     ".": {
       "types": "./dist/types/elements/index.d.ts",
-      "import": "./dist/sunken-land.js",
-      "default": "./dist/sunken-land.js"
+      "import": "./dist/sunkenland.js",
+      "default": "./dist/sunkenland.js"
     },
     "./presets/*": "./dist/presets/*",
     "./stickers/*": "./dist/stickers/*",

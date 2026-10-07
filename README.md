@@ -26,19 +26,19 @@ with a scoped `.npmrc`:
 ```
 
 ```sh
-NODE_AUTH_TOKEN=$(gh auth token) bun add @solsynth/sunken-land
+NODE_AUTH_TOKEN=$(gh auth token) bun add @solsynth/sunkenland
 ```
 
 ```js
 // ESM — registers every sk-* element
-import { configure } from "@solsynth/sunken-land";
+import { configure } from "@solsynth/sunkenland";
 ```
 
 ```html
 <!-- CDN (IIFE) — exposes the `SunkenLand` global -->
 <!-- Serve dist/ from your own origin: the registry needs a token, so jsdelivr
      and unpkg cannot proxy GitHub Packages -->
-<script src="/vendor/sunken-land.iife.js"></script>
+<script src="/vendor/sunkenland.iife.js"></script>
 <script>
   SunkenLand.configure({ css: "/vendor/presets/replies-list.css" });
 </script>
@@ -52,7 +52,7 @@ client-only plugin is all you need:
 
 ```ts
 // plugins/sunkenland.client.ts
-import { configure } from "@solsynth/sunken-land";
+import { configure } from "@solsynth/sunkenland";
 
 export default defineNuxtPlugin(() => {
   configure({
@@ -72,7 +72,7 @@ export default defineNuxtConfig({
 });
 ```
 
-Server routes can use the package's API layer directly — `import { createApiClient } from "@solsynth/sunken-land"` — because nothing in the module touches the DOM at import time.
+Server routes can use the package's API layer directly — `import { createApiClient } from "@solsynth/sunkenland"` — because nothing in the module touches the DOM at import time.
 
 ## Quick start
 
@@ -449,7 +449,7 @@ Tokens land in the session (localStorage by default) and authenticate every
 element plus `apiFetch`; refreshes use the provider's `refresh_token` grant.
 
 ```js
-import { session } from "@solsynth/sunken-land";
+import { session } from "@solsynth/sunkenland";
 
 await session.signInWithOidc();                 // popup, PKCE
 await session.signInWithOidc({ mode: "redirect" });
@@ -489,7 +489,7 @@ provides the API client's `getAccessToken` / `refreshAccessToken` /
 session signs out cleanly.
 
 ```js
-import { SunkenLandSession, inMemorySessionStorage } from "@solsynth/sunken-land";
+import { SunkenLandSession, inMemorySessionStorage } from "@solsynth/sunkenland";
 
 configure({
   session: new SunkenLandSession({ storage: inMemorySessionStorage() }), // or sessionStorage, per-tenant keys
@@ -619,7 +619,7 @@ endpoint by id. Hosts rendering the same files (avatars, attachments, markdown
 images) need the same URL shape the elements use, so the helpers are exported:
 
 ```js
-import { getFileUrl, getAvatarUrl, getFileKind, getBlurhash, getImageSize } from "@solsynth/sunken-land";
+import { getFileUrl, getAvatarUrl, getFileKind, getBlurhash, getImageSize } from "@solsynth/sunkenland";
 
 getFileUrl("a1b2c3");                                  // https://api.solian.app/drive/files/a1b2c3
 getFileUrl("a1b2c3", { variant: "thumbnail" });        // …/drive/files/a1b2c3?thumbnail=true
@@ -649,7 +649,7 @@ Framework-agnostic, zod-validated client. Responses are snake_case on the wire
 and validated as camelCase; request bodies are validated then snake_cased.
 
 ```js
-import { configureApi, authApi, accountApi, postsApi, driveApi } from "@solsynth/sunken-land";
+import { configureApi, authApi, accountApi, postsApi, driveApi } from "@solsynth/sunkenland";
 
 configureApi({ baseUrl: "https://api.solian.app", getAccessToken: session.getAccessToken });
 
@@ -691,7 +691,7 @@ the host element.
 
 ## Publishing
 
-Published to **GitHub Packages** as `@solsynth/sunken-land`. The scope
+Published to **GitHub Packages** as `@solsynth/sunkenland`. The scope
 must be the repository owner, and `publishConfig` pins the registry
 (`https://npm.pkg.github.com`) with public visibility. One-time setup:
 
@@ -708,7 +708,7 @@ git push --follow-tags # then .github/workflows/publish.yml runs, or publish by 
 
 The workflow type-checks and runs the browser suite before `npm publish`;
 `prepack` builds `dist/` first, so a published tarball is never stale. Contents:
-`dist/sunken-land.js` (ESM), `dist/sunken-land.iife.js` (CDN global),
+`dist/sunkenland.js` (ESM), `dist/sunkenland.iife.js` (CDN global),
 `dist/presets/*.css`, `dist/stickers/*.webp`, `dist/types/**`, README, LICENSE.
 
 The first publish must come from the workflow (GitHub links a package to the
@@ -743,7 +743,7 @@ docker build --build-arg NODE_AUTH_TOKEN="$TOKEN" .
 ### Plain HTML / CDN
 
 GitHub Packages is not proxied by jsdelivr or unpkg, so hosts serve the built
-files themselves (`dist/sunken-land.iife.js`, `dist/presets/*.css`,
+files themselves (`dist/sunkenland.iife.js`, `dist/presets/*.css`,
 `dist/stickers/*.webp`). Committing `dist/` would instead allow
 `https://cdn.jsdelivr.net/gh/Solsynth/SunkenLand@vX.Y.Z/dist/…`.
 
@@ -757,13 +757,13 @@ not carry a token has two options:
    and a Docker build needs no registry credentials:
 
    ```json
-   "@solsynth/sunken-land": "file:vendor/solsynth-sunken-land-0.1.0.tgz"
+   "@solsynth/sunkenland": "file:vendor/solsynth-sunkenland-0.1.0.tgz"
    ```
 
    The image must copy it *before* installing:
    `COPY package.json ./`, `COPY vendor ./vendor/`, then `RUN npm install`.
 
-2. **Git dependency** — `"@solsynth/sunken-land": "github:Solsynth/SunkenLand#v0.1.0"`.
+2. **Git dependency** — `"@solsynth/sunkenland": "github:Solsynth/SunkenLand#v0.1.0"`.
    No registry, no token (the repository is public), and it clones in seconds —
    but `dist/` is not committed, so an install gets *sources only* and the
    package is not importable until it is built: commit `dist/` or add a
@@ -773,11 +773,11 @@ not carry a token has two options:
 
 ```sh
 # in this repo
-npm pack                     # → solsynth-sunken-land-<version>.tgz
+npm pack                     # → solsynth-sunkenland-<version>.tgz
 # in the consumer
-bun add ../SunkenLand/solsynth-sunken-land-<version>.tgz
+bun add ../SunkenLand/solsynth-sunkenland-<version>.tgz
 # or link the checkout (rebuild dist on change)
-bun link && bun link @solsynth/sunken-land
+bun link && bun link @solsynth/sunkenland
 ```
 
 `file:`/link installs skip the registry (and its token) entirely — the tarball
