@@ -62,7 +62,7 @@ const meta: Meta<PostArgs> = {
     post: {
       control: "text",
       description:
-        "Post id, resolved through `GET /sphere/posts/{post}` (public). Fixture ids (`post_rich`, `post_reference`, `post_forwarded`, `post_truncated`, `post_article`, `post_private`, `post_plain`, `post_empty`) render offline; a real post needs the API toolbar set to Live.",
+        "Post id, resolved through `GET /sphere/posts/{post}` (public). Fixture ids (`post_rich`, `post_reference`, `post_forwarded`, `post_truncated`, `post_article`, `post_private`, `post_plain`, `post_empty`, `post_orphan`) render offline; a real post needs the API toolbar set to Live.",
     },
     detail: {
       control: "boolean",
@@ -324,6 +324,45 @@ export const EmptyBody: Story = {
     await expect(el.shadowRoot.querySelector('[part="content"]')).toBeNull();
     await expect(el.shadowRoot.querySelector('[part="body"]')).not.toBeNull();
     await expect(el.shadowRoot.querySelector('[part="stats"]')).not.toBeNull();
+  },
+};
+
+/**
+ * A post whose author is gone: the API loads the embedded publisher
+ * best-effort, so a deleted publisher (or a federated post with an empty
+ * `publisher_id`) arrives as `publisher: null`. The post still renders — name
+ * "Unknown", initials avatar, no handle, no verification mark — instead of
+ * failing schema validation.
+ */
+export const OrphanPublisher: Story = {
+  args: { post: "post_orphan" },
+  play: async ({ canvasElement, step }) => {
+    const el = canvasElement.querySelector("sk-post");
+    if (!el || !el.shadowRoot) throw new Error("element not upgraded");
+    const sr = el.shadowRoot;
+
+    await step("a null publisher validates and renders the post", async () => {
+      await waitFor(() =>
+        expect(sr.querySelector('[part="publisher"]')?.textContent?.trim()).toBe("Unknown"),
+      );
+      await expect(el.getAttribute("data-error")).toBeNull();
+      await expect(sr.querySelector('[part="error"]')).toBeNull();
+    });
+
+    await step("the header falls back to initials and drops the author marks", async () => {
+      await expect(sr.querySelector('[part="avatar"]')?.textContent?.trim()).toBe("UN");
+      await expect(sr.querySelector('[part="avatar"] img')).toBeNull();
+      const handle = sr.querySelector('[part="handle"]')?.textContent ?? "";
+      await expect(handle.startsWith("@")).toBe(true);
+      await expect(handle).not.toContain("alice");
+      await expect(sr.querySelector('[part="verification"]')).toBeNull();
+      await expect(sr.querySelector('[part="membership"]')).toBeNull();
+    });
+
+    await step("the body and stats render anyway", async () => {
+      await expect(sr.querySelector('[part="content"]')).not.toBeNull();
+      await expect(sr.querySelector('[part="stats"]')).not.toBeNull();
+    });
   },
 };
 

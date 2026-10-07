@@ -105,7 +105,12 @@ const snPostBaseSchema = z.object({
   viewsUnique: z.number(),
   viewsTotal: z.number(),
   isTruncated: z.boolean(),
-  publisher: snPublisherSchema,
+  // The wire sends `null` when the author's publisher row is gone (deleted
+  // account) or the post is federated (`publisher_id` empty) — the backend
+  // loads the embedded publisher best-effort and leaves the property null.
+  // The elements already fall back to "Unknown" (`getDisplayName`), so accept
+  // it instead of failing the whole reply list.
+  publisher: snPublisherSchema.nullable(),
   attachments: z.array(snFileAttachmentSchema),
   tags: z.array(snTagSchema),
   // Both spellings have appeared on the wire; keep the union optional.

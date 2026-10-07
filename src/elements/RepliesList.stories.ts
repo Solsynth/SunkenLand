@@ -202,6 +202,58 @@ export const Attachments: Story = {
   },
 };
 
+/**
+ * A reply whose author is gone: the API loads the embedded publisher
+ * best-effort, so a reply whose publisher row no longer exists (or a federated
+ * post with an empty `publisher_id`) arrives as `publisher: null`. The list
+ * must render it with the "Unknown" fallback rather than failing the whole
+ * page on validation (`publisher` is nullable in `snPostSchema`).
+ */
+export const OrphanPublisher: Story = {
+  args: { post: "post_orphan", take: 6, queryTerm: undefined },
+  play: async ({ canvasElement, step }) => {
+    const el = canvasElement.querySelector("sk-replies-list");
+    if (!el || !el.shadowRoot) throw new Error("element not upgraded");
+    const sr = el.shadowRoot;
+    const replies = () => [...sr.querySelectorAll<HTMLElement>(".sk-reply")];
+
+    await step("a null publisher validates and the thread renders", async () => {
+      await waitFor(() => expect(replies().length).toBe(2));
+      await expect(sr.querySelector('[part="error"]')).toBeNull();
+      await expect(el.getAttribute("data-error")).toBeNull();
+    });
+
+    await step("the authorless reply falls back to the Unknown name and initials", async () => {
+      const row = replies()[0];
+      await expect(row?.querySelector('[part="author"]')?.textContent?.trim()).toBe("Unknown");
+      await expect(row?.querySelector('[part="handle"]')).toBeNull();
+      await expect(row?.querySelector('[part="avatar"]')?.textContent?.trim()).toBe("UN");
+      await expect(row?.querySelector('[part="avatar"] img')).toBeNull();
+    });
+
+    await step("its sibling keeps its author", async () => {
+      await expect(replies()[1]?.querySelector('[part="author"]')?.textContent?.trim()).toBe(
+        "Alice",
+      );
+      await expect(replies()[1]?.querySelector('[part="handle"]')?.textContent?.trim()).toBe(
+        "@alice",
+      );
+    });
+
+    await step("the authorless row still dispatches reply-click", async () => {
+      const fired = new Promise<string>((resolve) => {
+        el.addEventListener(
+          "reply-click",
+          (event) => resolve((event as CustomEvent<{ postId: string }>).detail.postId),
+          { once: true },
+        );
+      });
+      replies()[0]?.click();
+      await expect(await fired).toBe("r_orphan");
+    });
+  },
+};
+
 /** The element can be registered under a custom tag via `defineRepliesList`. */
 export const CustomTag: Story = {
   render: (args) => html`

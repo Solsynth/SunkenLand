@@ -668,6 +668,12 @@ profile, factors, contacts, connections, devices/sessions, publishing settings,
 and notification preferences. `postsApi` covers reply reads plus post/reply
 creation and reactions.
 
+Validation is permissive where the wire can send `null`: `post.publisher` (and
+the recursive `repliedPost`/`forwardedPost`) is `null` when the author's
+publisher no longer exists — a deleted account, or a federated post with an
+empty `publisher_id`. The elements fall back to `"Unknown"` (`getDisplayName`)
+rather than failing the whole list.
+
 ## Presets
 
 Opt-in stylesheets (`presets/*.css`) replicating FloatLand's look — oklch

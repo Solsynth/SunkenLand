@@ -5,7 +5,8 @@
  * which is unreachable from Storybook/Vitest. This installs a fetch stub that
  * serves the same snake_case wire payloads the demo page uses:
  *
- * - `/sphere/posts/{id}/replies/threaded` → threaded replies (`x-total` header)
+ * - `/sphere/posts/{id}/replies/threaded` → threaded replies (`x-total` header);
+ *   `post_orphan` serves the author-gone thread (`publisher: null`)
  * - `/stargate/auth/token` → issues `at_test` (authorization_code) and
  *   `at_refreshed` (refresh_token) pairs
  * - `/stargate/accounts/me` → the stub account (requires the issued token)
@@ -319,6 +320,33 @@ export const REPLIES: WireReply[] = [
   },
 ];
 
+/**
+ * Thread whose author is gone: the API loads the embedded publisher
+ * best-effort, so a reply whose publisher row no longer exists (or a federated
+ * post with an empty `publisher_id`) comes back with `publisher: null` — the
+ * exact payload that used to fail zod validation. Served for `post_orphan`,
+ * mixed with a normal reply so the list must render both.
+ */
+export const ORPHAN_REPLIES: WireReply[] = [
+  {
+    post: makePost("r_orphan", {
+      content: "Posted by an account that no longer exists.",
+      publisher: null,
+    }),
+    depth: 0,
+    parent_id: null,
+  },
+  {
+    post: makePost("r_orphan_child", {
+      content: "A normal reply under the orphan.",
+      published_at: minutesAgo(45),
+      replies_count: 0,
+    }),
+    depth: 1,
+    parent_id: "r_orphan",
+  },
+];
+
 /** Recorded requests + counters the play tests assert against. */
 export interface StubRequest {
   method: string;
@@ -617,7 +645,8 @@ export function usernameAccountFixture(key: string): UsernameData {
  * Posts `sk-post` renders, served from the existing `GET /sphere/posts/{id}`
  * route. Each covers one presentation the element has to get right: Markdown
  * body + tags + attachments + reactions, a replied/forwarded reference, an
- * API-truncated body, an article card, a non-public post, and the minimal case.
+ * API-truncated body, an article card, a non-public post, a gone author
+ * (`publisher: null`), and the minimal case.
  *
  * Reaction symbols are stored snake_cased (`thumb_up`) — the wire form — so the
  * client's key camelCasing and the element's normalization are exercised.
@@ -686,6 +715,14 @@ const POST_FIXTURES: Record<string, Record<string, unknown>> = {
   post_empty: {
     visibility: 0,
     content: "",
+    reactions_count: {},
+  },
+  post_orphan: {
+    visibility: 0,
+    // The author's publisher row is gone, so the API sends `publisher: null`
+    // (the same payload `post_orphan`'s replies carry).
+    publisher: null,
+    content: "Posted by an account that no longer exists.",
     reactions_count: {},
   },
 };
@@ -1056,10 +1093,14 @@ export function installApiStub(): void {
     );
     if (match) {
       const postId = decodeURIComponent(match[1] ?? "");
+      // `post_orphan` serves the author-gone thread; every other id gets the
+      // shared pool (freshly created replies first).
       const pool =
         postId === "post_empty"
           ? []
-          : [...stubState.createdReplies, ...REPLIES];
+          : postId === "post_orphan"
+            ? ORPHAN_REPLIES
+            : [...stubState.createdReplies, ...REPLIES];
       const take = Number(url.searchParams.get("take") ?? 6);
       const offset = Number(url.searchParams.get("offset") ?? 0);
       const slice = pool.slice(offset, offset + take);
