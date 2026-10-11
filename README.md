@@ -15,18 +15,10 @@ The bundle embeds its own Vue, so nothing is Vue-specific at runtime; `vue`,
 
 ## Install
 
-The package is on **GitHub Packages**, which requires a token for *every*
-install (public packages included) — so consumers point npm at the registry
-with a scoped `.npmrc`:
-
-```ini
-# .npmrc
-@solsynth:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
+Just use your favourite package manager and do a simple install is enough.
 
 ```sh
-NODE_AUTH_TOKEN=$(gh auth token) bun add @solsynth/sunkenland
+bun add @solsynth/sunkenland
 ```
 
 ```js
