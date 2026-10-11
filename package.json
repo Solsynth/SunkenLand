@@ -40,6 +40,8 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "oxfmt src/",
+    "deploy:pages": "wrangler pages deploy --branch=master --commit-dirty=true",
+    "deploy:storybook": "run-s build-storybook deploy:pages",
     "prepack": "npm run build"
   },
   "dependencies": {

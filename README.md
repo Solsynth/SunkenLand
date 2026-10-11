@@ -785,6 +785,12 @@ bun run lint       # oxlint + eslint
 bun run build      # dist ESM + IIFE bundles, preset copies, .d.ts
 ```
 
+- `bun run deploy:storybook` builds `storybook-static/` and uploads it to the
+  `sunkenland-storybook` Cloudflare Pages project (`wrangler.jsonc`) on the
+  `master` production branch, so it publishes to
+  <https://sunkenland-storybook.pages.dev>. `bun run deploy:pages` re-uploads
+  the existing build without rebuilding.
+
 - `demo/index.html` — the elements on a plain HTML page with a stubbed API.
 - `.storybook/fixtures.ts` — the fetch stub (auth, publishers, writes, reply
   reads) used by stories and tests. Storybook's **API** toolbar switches it to

@@ -1,0 +1,9 @@
+{
+  // Cloudflare Pages project hosting the static Storybook documentation site.
+  // Deploy with: bun run build-storybook && wrangler pages deploy --branch=master
+  // (`storybook-static/` is gitignored — wrangler uploads it straight from disk.)
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "sunkenland-storybook",
+  "compatibility_date": "2026-10-11",
+  "pages_build_output_dir": "./storybook-static"
+}
