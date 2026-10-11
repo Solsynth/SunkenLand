@@ -13,6 +13,8 @@ The bundle embeds its own Vue, so nothing is Vue-specific at runtime; `vue`,
 `zod`, and `@unlazy/vue` are declared as dependencies because the emitted
 `.d.ts` references them.
 
+For livestory docs, see <https://sk.solsynth.dev>.
+
 ## Install
 
 Just use your favourite package manager and do a simple install is enough.
@@ -28,11 +30,10 @@ import { configure } from "@solsynth/sunkenland";
 
 ```html
 <!-- CDN (IIFE) — exposes the `SunkenLand` global -->
-<!-- Serve dist/ from your own origin: the registry needs a token, so jsdelivr
-     and unpkg cannot proxy GitHub Packages -->
-<script src="/vendor/sunkenland.iife.js"></script>
+<!-- Feel free to use any CDN, jsdeliver or anything else -->
+<script src="https://unpkg.com/@solsynth/sunkenland/dist/sunkenland.iife.js"></script>
 <script>
-  SunkenLand.configure({ css: "/vendor/presets/replies-list.css" });
+  SunkenLand.configure({ css: "https://unpkg.com/@solsynth/sunkenland/dist/presets/replies-list.css" });
 </script>
 ```
 
