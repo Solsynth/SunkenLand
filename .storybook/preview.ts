@@ -9,9 +9,14 @@ import { defineReplyComposer } from "../src/elements/reply-composer";
 import { defineUsername } from "../src/elements/username";
 import { definePost } from "../src/elements/post";
 import { defineMedia, defineMediaCollection } from "../src/elements/media";
+import { defineFilePicker } from "../src/elements/file-picker";
 
 // Elements fetch `https://api.solian.app` — stub it so stories run anywhere.
 installApiStub();
+
+// The picker is registered here like every other element: a story imports the
+// module for its types, not for the side effect.
+defineFilePicker();
 
 // Preset stylesheets for every element, injected via the shared config (the
 // same call a CDN host would make with `SunkenLand.configure({ css: … })`).

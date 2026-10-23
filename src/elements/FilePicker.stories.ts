@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/web-components'
 import { html } from 'lit'
 import { ifDefined } from 'lit/directives/if-defined.js'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 
 /**
  * `sk-file-picker` — a Drive file picker trigger.
@@ -77,9 +77,20 @@ export const Styled: Story = {
     label: 'Choose a file',
   },
   play: async ({ canvasElement }) => {
-    const button = canvasElement.querySelector('sk-file-picker')?.shadowRoot?.querySelector('button')
-    await expect(button).toBeTruthy()
-    await expect(button?.disabled).toBe(false)
+    // The element upgrades asynchronously, so its shadow root does not exist
+    // on the first frame: waiting for the button is the assertion.
+    await waitFor(() => {
+      const host = canvasElement.querySelector('sk-file-picker')
+      expect(host?.shadowRoot?.querySelector('button')).toBeTruthy()
+    })
+    const host = canvasElement.querySelector('sk-file-picker')
+    await expect(host?.shadowRoot?.querySelector('button')?.disabled).toBe(false)
+    // The preset is what this story is about: it must be linked into the root.
+    await waitFor(() => {
+      expect(host?.shadowRoot?.querySelector('link')?.getAttribute('href')).toBe(
+        'presets/file-picker.css',
+      )
+    })
   },
 }
 
