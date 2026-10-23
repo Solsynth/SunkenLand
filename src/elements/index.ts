@@ -13,6 +13,7 @@ import { defineReplyComposer } from "./reply-composer";
 import { defineMedia, defineMediaCollection } from "./media";
 import { definePost } from "./post";
 import { defineUsername } from "./username";
+import { defineFilePicker } from "./file-picker";
 
 defineRepliesList();
 defineLogin();
@@ -22,6 +23,7 @@ defineMedia();
 defineMediaCollection();
 defineUsername();
 definePost();
+defineFilePicker();
 
 export { RepliesListElement, defineRepliesList } from "./replies-list";
 export { LoginElement, defineLogin } from "./login";
@@ -35,6 +37,7 @@ export {
 } from "./media";
 export { UsernameElement, defineUsername } from "./username";
 export { PostElement, definePost } from "./post";
+export { FilePickerElement, defineFilePicker } from "./file-picker";
 
 // Drive-file helpers: the API sends `url: null` and serves files from
 // `…/drive/files/{id}`, so hosts rendering the same files need the same URL

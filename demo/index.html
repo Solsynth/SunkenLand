@@ -636,6 +636,7 @@
       .demo-block { margin-bottom: 2rem; }
       .demo-block h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
       .hint { font-size: 0.78rem; color: #666; margin: 0.5rem 0; }
+      .demo-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem; }
       #use-token, #fetch-me, #fetch-react { font: inherit; font-size: 0.78rem; padding: 0.35rem 0.75rem; border: 1px solid #ccc; border-radius: 0.4rem; background: #fff; cursor: pointer; margin-right: 0.35rem; }
       /* Customization demo: token overrides + ::part() styling from page CSS. */
       #branded {
@@ -781,6 +782,37 @@
     </div>
 
     <div class="demo-block">
+      <h2>Drive picker (sk-file-picker)</h2>
+      <div class="demo-row">
+        <sk-file-picker
+          label="Attach an image"
+          mime="image/*"
+          drive="http://localhost:5199"
+          ></sk-file-picker>
+        <sk-file-picker
+          label="Choose a folder"
+          view="folders"
+          drive="http://localhost:5199"
+          ></sk-file-picker>
+        <sk-file-picker
+          label="Unstyled trigger"
+          drive="http://localhost:5199"
+          css=""
+        ></sk-file-picker>
+      </div>
+      <p class="hint">
+        <code>sk-file-picker</code> opens SnFS's file picker in a frame and dispatches
+        <code>pick</code> with the chosen files (<code>id</code>, <code>name</code>,
+        <code>url</code>, …). It forwards this page's access token to the frame, so
+        it works cross-site where the drive's <code>SameSite=Lax</code> cookie
+        cannot reach. The third trigger passes <code>css=""</code>: no preset, so
+        it is a bare button the page styles. <code>drive</code> points at a local
+        drive for the demo; production defaults to
+        <code>https://fs.solian.app</code>.
+      </p>
+    </div>
+
+    <div class="demo-block">
       <h2>Media (sk-media / sk-media-collection)</h2>
       <sk-media file="a_demo_clip"></sk-media>
       <sk-media-collection files="a_demo_img, a_demo_clip, a_demo_spec" max-visible="2"></sk-media-collection>
@@ -881,6 +913,7 @@
           "../dist/presets/reactions.css",
           "../dist/presets/username.css",
           "../dist/presets/post.css",
+          "../dist/presets/file-picker.css",
         ],
         oidc: { clientId: "sunkenland-demo" },
       });

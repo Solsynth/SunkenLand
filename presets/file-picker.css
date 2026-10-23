@@ -1,0 +1,141 @@
+/**
+ * SunkenLand preset stylesheet for `sk-file-picker`.
+ *
+ * The element is deliberately unstyled: without this file it is a bare
+ * `<button>`, so a host's own button styles apply and nothing fights them. Load
+ * this preset when the picker trigger should look like the rest of the
+ * SunkenLand surface (FloatLand's look — oklch tokens, Nunito, 0.625rem radii,
+ * light/dark through `prefers-color-scheme`).
+ *
+ *   <sk-file-picker label="Attach an image" mime="image/*"
+ *              css="https://cdn…/presets/file-picker.css"></sk-file-picker>
+ *
+ *   // or once for every element
+ *   SunkenLand.configure({ css: ["…/presets/base.css", "…/presets/file-picker.css"] });
+ *
+ * Themable without writing selectors — override these on the host element or
+ * any ancestor:
+ *
+ *   Surfaces:  --sk-font, --sk-base-100, --sk-base-200, --sk-base-300,
+ *              --sk-base-content, --sk-primary, --sk-primary-content,
+ *              --sk-radius, --sk-border
+ *   Button:    --sk-file-picker-bg, --sk-file-picker-color, --sk-file-picker-border-color,
+ *              --sk-file-picker-hover-bg, --sk-file-picker-hover-border-color,
+ *              --sk-file-picker-padding, --sk-file-picker-gap, --sk-file-picker-radius,
+ *              --sk-file-picker-font-size, --sk-file-picker-font-weight
+ *
+ *   sk-file-picker { --sk-file-picker-bg: rebeccapurple; --sk-file-picker-radius: 0.5rem; }
+ *
+ * Every internal node also carries a `part` (`button`, `label`, `icon`,
+ * `error`) for direct styling from the host:
+ *
+ *   sk-file-picker::part(button) { box-shadow: 0 1px 2px rgb(0 0 0 / 0.2); }
+ *
+ * `:host` rules are scoped to the element's marker class (`:host(.sk-file-picker)`,
+ * which the component sets on the host), so configuring several presets at once
+ * cannot leak this element's surface onto the others.
+ */
+
+:host(.sk-file-picker) {
+  --sk-font: 'Nunito', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sk-base-100: oklch(100% 0 0);
+  --sk-base-200: oklch(98% 0 0);
+  --sk-base-300: oklch(95% 0 0);
+  --sk-base-content: oklch(21% 0.006 285.885);
+  --sk-primary: oklch(62% 0.0873 281deg);
+  --sk-primary-content: oklch(93% 0.034 272.788);
+  --sk-radius: 0.625rem;
+  --sk-border: color-mix(in oklch, var(--sk-base-300) 85%, transparent);
+
+  --sk-file-picker-bg: var(--sk-base-100);
+  --sk-file-picker-color: var(--sk-base-content);
+  --sk-file-picker-border-color: var(--sk-border);
+  --sk-file-picker-hover-bg: var(--sk-base-200);
+  --sk-file-picker-hover-border-color: color-mix(in oklch, var(--sk-base-content) 18%, transparent);
+  --sk-file-picker-padding: 0.5rem 0.875rem;
+  --sk-file-picker-gap: 0.5rem;
+  --sk-file-picker-radius: var(--sk-radius);
+  --sk-file-picker-font-size: 0.875rem;
+  --sk-file-picker-font-weight: 500;
+
+  display: inline-block;
+  font-family: var(--sk-font);
+  color: var(--sk-base-content);
+}
+
+@media (prefers-color-scheme: dark) {
+  :host(.sk-file-picker) {
+    --sk-base-100: oklch(21% 0.006 285.885);
+    --sk-base-200: oklch(26% 0.008 285.885);
+    --sk-base-300: oklch(32% 0.01 285.885);
+    --sk-base-content: oklch(96% 0.002 285.885);
+    --sk-border: color-mix(in oklch, var(--sk-base-300) 70%, transparent);
+  }
+}
+
+.sk-file-picker-root {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  align-items: flex-start;
+}
+
+.sk-file-picker__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-file-picker-gap);
+  padding: var(--sk-file-picker-padding);
+  border: 1px solid var(--sk-file-picker-border-color);
+  border-radius: var(--sk-file-picker-radius);
+  background: var(--sk-file-picker-bg);
+  color: var(--sk-file-picker-color);
+  font: inherit;
+  font-size: var(--sk-file-picker-font-size);
+  font-weight: var(--sk-file-picker-font-weight);
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.sk-file-picker__button:hover:not(:disabled) {
+  background: var(--sk-file-picker-hover-bg);
+  border-color: var(--sk-file-picker-hover-border-color);
+}
+
+.sk-file-picker__button:focus-visible {
+  outline: 2px solid var(--sk-primary);
+  outline-offset: 2px;
+}
+
+.sk-file-picker__button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.sk-file-picker__icon {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: color-mix(in oklch, var(--sk-file-picker-color) 70%, transparent);
+}
+
+.sk-file-picker__label {
+  white-space: nowrap;
+}
+
+.sk-file-picker__error {
+  margin: 0;
+  max-width: 32ch;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: oklch(58% 0.18 25deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-file-picker__button {
+    transition: none;
+  }
+}

@@ -54,6 +54,13 @@ export interface SunkenLandConfig extends ApiClientConfig {
   stickerUrl?: string;
 
   /**
+   * SnFS origin the Drive picker (`sk-picker`) embeds and loads its embed
+   * script from — e.g. `https://fs.solian.app`. Defaults to the hosted drive.
+   * The element's `drive` attribute overrides this.
+   */
+  drive?: string;
+
+  /**
    * Preset stylesheet(s) injected into every element's shadow root as
    * `<link rel="stylesheet">`, exactly as an embedding host would load them
    * from a CDN. An element's own `css` attribute overrides this.

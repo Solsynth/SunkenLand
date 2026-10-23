@@ -345,6 +345,44 @@ button; signed in it posts as the account's publisher.
 - Parts: `guest`, `hint`, `button`, `logo`, `label`, `form`, `meta`, `as`,
   `input`, `bar`, `count`, `submit`, `error`
 
+### `sk-file-picker`
+
+Drive file picker trigger. Clicking it opens SnFS's own picker in a frame and
+reports what the person chose — the portable way to let a host page borrow a
+file from the drive without reimplementing browsing, upload, or auth.
+
+```html
+<sk-file-picker label="Attach an image" mime="image/*"></sk-file-picker>
+
+<script>
+  document.querySelector("sk-file-picker").addEventListener("pick", (event) => {
+    const [file] = event.detail.files; // { id, name, mimeType, url, … }
+    if (file) attach(file.id);
+  });
+</script>
+```
+
+- Attributes: `label`, `view` (`files` | `folders` | `any`), `multiple`,
+  `mime` (`image/*,application/pdf`), `accept` (`png,jpg`), `upload`,
+  `drive` (SnFS origin, default `https://fs.solian.app`), `title`,
+  `description`, `theme` (`auto` | `dark` | `light`), `locale`, `css`
+- Property: `open()` — opens the picker exactly as a click does
+- Events: `pick` (`detail = { files }`, empty when cancelled), `pick-error`
+  (`detail = { error }`)
+- Parts: `button`, `label`, `icon`, `error`
+
+**Styling is opt-in.** The element renders a bare `<button>` and nothing else;
+without a preset the host page's own button styles apply. Load
+`presets/file-picker.css` (or `configure({ css })` with every preset, as usual) for
+the FloatLand look.
+
+**Authentication.** A cross-site frame cannot receive the drive's
+`SameSite=Lax` session cookie, so the element forwards the page's access token
+(the `sk-login` OIDC session, or `configure({ token })` / `getAccessToken`) to
+the frame over `postMessage` — never in a URL. A signed-out page can still open
+the picker; the drive's own sign-in flow takes over, and `pick-error` reports
+that the session is missing.
+
 ### `sk-reaction-list`
 
 Reaction bar for a post — the embeddable port of FloatLand's
@@ -499,7 +537,7 @@ its host (`sk-replies-list.sk-replies`, `sk-login.sk-login`,
 `sk-reply-composer.sk-composer`, `sk-reaction-list.sk-reactions`,
 `sk-media.sk-media`, `sk-media-collection.sk-media` — the two media elements
 share one family marker because they share one preset — plus
-`sk-username.sk-username` and `sk-post.sk-post`). That keeps one preset from
+`sk-username.sk-username`, `sk-post.sk-post`, and `sk-file-picker.sk-file-picker`). That keeps one preset from
 styling — or clipping, via `overflow` — another element. The marker also
 survives custom tag names (`defineReactionList("my-reactions")`).
 
@@ -681,6 +719,7 @@ the host element.
 - `presets/reactions.css`
 - `presets/username.css`
 - `presets/post.css` (imports `media.css` for the attachments)
+- `presets/file-picker.css` (the `sk-file-picker` trigger; the element is else unstyled)
 
 ## Publishing
 
