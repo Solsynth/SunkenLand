@@ -60,5 +60,5 @@ jobs:
             echo "@solsynth:registry=https://npm.pkg.github.com"
             echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}"
           } > .npmrc
-          npm install "@solsynth/sunken-land@$version"
-          node -e "import('@solsynth/sunken-land').then((m) => console.log('installed:', typeof m.configure, typeof m.SunkenLandSession))"
+          npm install "@solsynth/sunkenland@$version"
+          node -e "import('@solsynth/sunkenland').then((m) => console.log('installed:', typeof m.configure, typeof m.SunkenLandSession))"
